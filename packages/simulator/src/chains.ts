@@ -4,6 +4,7 @@ import type { ChainConfig } from "./simulator";
 const DEFAULTS: ChainConfig[] = [
   { chainId: 1, name: "Ethereum Mainnet", rpcUrl: "https://ethereum-rpc.publicnode.com", blockLag: 2 },
   { chainId: 11155111, name: "Sepolia", rpcUrl: "https://ethereum-sepolia-rpc.publicnode.com", blockLag: 2 },
+  { chainId: 31337, name: "Anvil Local PS2", rpcUrl: "http://127.0.0.1:8545", blockLag: 0 },
 ];
 
 /**
