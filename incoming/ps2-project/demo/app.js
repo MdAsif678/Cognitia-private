@@ -52,35 +52,28 @@ function logToConsole(title, data) {
 
 // Connect Wallet
 async function connectWallet() {
-  userAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
   const addrElem = document.getElementById("wallet-address");
   const connBtn = document.getElementById("btn-connect");
 
   if (window.ethereum) {
     try {
-      const accounts = await Promise.race([
-        window.ethereum.request({ method: "eth_accounts" }),
-        new Promise((res) => setTimeout(() => res([]), 1000))
-      ]);
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       if (Array.isArray(accounts) && accounts.length > 0) {
         userAccount = accounts[0];
-      } else {
-        const reqAccounts = await Promise.race([
-          window.ethereum.request({ method: "eth_requestAccounts" }),
-          new Promise((res) => setTimeout(() => res([]), 2000))
-        ]);
-        if (Array.isArray(reqAccounts) && reqAccounts.length > 0) {
-          userAccount = reqAccounts[0];
-        }
+        if (addrElem) addrElem.textContent = userAccount;
+        if (connBtn) connBtn.textContent = "Connected: " + userAccount.slice(0, 6) + "..." + userAccount.slice(-4);
+        logToConsole("Wallet Connected", { account: userAccount });
+        return;
       }
     } catch (err) {
-      console.warn("Wallet request failed, using default account:", err);
+      console.warn("Wallet connection request rejected or failed:", err);
     }
   }
 
+  userAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
   if (addrElem) addrElem.textContent = userAccount;
-  if (connBtn) connBtn.textContent = "Connected: " + userAccount.slice(0, 6) + "..." + userAccount.slice(-4);
-  logToConsole("Wallet Active", { account: userAccount });
+  if (connBtn) connBtn.textContent = "Connected: 0xf39F...2266";
+  logToConsole("Mock Wallet Active", { account: userAccount });
 }
 
 // Switch to Anvil network
@@ -112,16 +105,27 @@ async function switchToAnvil() {
 
 // Helper to send transaction through provider
 async function sendTx(to, data, value = "0x0") {
-  if (!userAccount) {
-    userAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+  let activeAccount = userAccount;
+
+  if (window.ethereum) {
+    try {
+      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      if (Array.isArray(accounts) && accounts.length > 0) {
+        activeAccount = accounts[0];
+        userAccount = activeAccount;
+      }
+    } catch (e) {}
   }
 
   const txParams = {
-    from: userAccount,
     to: to,
     data: data,
     value: value
   };
+
+  if (activeAccount) {
+    txParams.from = activeAccount;
+  }
 
   logToConsole("⚡ Sending Transaction to Provider (Ready for Interception)", txParams);
 
@@ -139,6 +143,23 @@ async function sendTx(to, data, value = "0x0") {
       });
       if (err.code === 4001) {
         alert("🛑 Transaction Rejected by User or Interceptor (Code 4001).");
+      } else if (err.code === 4100) {
+        // Site not authorized yet in MetaMask: trigger eth_requestAccounts and retry
+        try {
+          const reqAccs = await window.ethereum.request({ method: "eth_requestAccounts" });
+          if (Array.isArray(reqAccs) && reqAccs[0]) {
+            txParams.from = reqAccs[0];
+            userAccount = reqAccs[0];
+            const retryHash = await window.ethereum.request({
+              method: "eth_sendTransaction",
+              params: [txParams]
+            });
+            logToConsole("Transaction Forwarded / Mined", { txHash: retryHash });
+            return;
+          }
+        } catch (retryErr) {
+          alert("Please authorize your wallet connection in MetaMask.");
+        }
       } else {
         alert("Error: " + (err.message || JSON.stringify(err)));
       }
