@@ -87,3 +87,41 @@ describe("analyze pipeline guarantees", () => {
     expect(r).toMatchObject({ status: "failed", severity: "unknown" });
   });
 });
+
+describe("approvals already in force (empty diff)", () => {
+  const TOKEN = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  const SPENDER = "0x70997970c51812dc3a010c7d01b50e0d17dc79c8";
+  const pad = (a: string) => a.slice(2).toLowerCase().padStart(64, "0");
+  const withData = (data: string): AnalyzeRequest => ({ ...req, params: [{ from: ACCOUNT, to: TOKEN, data }] });
+
+  it("still rates a re-confirmed unlimited approve as high", async () => {
+    const data = "0x095ea7b3" + pad(SPENDER) + "f".repeat(64);
+    const r = await analyze(withData(data), deps(() => Promise.resolve(partialSim({}))));
+    expect(r.severity).toBe("high");
+    expect(r.findings[0]?.ruleId).toBe("approval.erc20-unlimited");
+    expect(r.findings[0]?.title).toMatch(/Re-confirms unlimited/);
+  });
+
+  it("still rates a re-confirmed setApprovalForAll(true) as high", async () => {
+    const data = "0xa22cb465" + pad(SPENDER) + "0".repeat(63) + "1";
+    const r = await analyze(withData(data), deps(() => Promise.resolve(partialSim({}))));
+    expect(r.severity).toBe("high");
+    expect(r.findings[0]?.ruleId).toBe("approval.operator-all");
+  });
+
+  it("does not double-report when the simulation already found the exposure", async () => {
+    const data = "0x095ea7b3" + pad(SPENDER) + "f".repeat(64);
+    const sim = partialSim({
+      exposures: [{ kind: "erc20-allowance", basis: "granted", standard: "erc20", token: TOKEN, owner: ACCOUNT, spender: SPENDER, amount: (2n ** 256n - 1n).toString(), unlimited: true, atRisk: {} }],
+    });
+    const r = await analyze(withData(data), deps(() => Promise.resolve(sim)));
+    expect(r.findings.filter((f) => f.ruleId === "approval.erc20-unlimited")).toHaveLength(1);
+  });
+
+  it("keeps approve(spender, 0) as a low-risk revoke", async () => {
+    const data = "0x095ea7b3" + pad(SPENDER) + "0".repeat(64);
+    const r = await analyze(withData(data), deps(() => Promise.resolve(partialSim({}))));
+    expect(r.severity).toBe("low");
+    expect(r.findings[0]?.ruleId).toBe("approval.revoke");
+  });
+});

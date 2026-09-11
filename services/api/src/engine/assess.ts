@@ -173,8 +173,50 @@ export function baselineAssess(input: AssessInput): Assessment {
     }
   }
 
-  // --- revocations: protective, worth naming explicitly ---
+  // --- approvals that the simulation shows as "no change" because they are already in force ---
+  // Re-confirming an allowance that a spender already holds produces an empty diff, but the request
+  // still asks the user to authorise that spender. Drainer sites re-prompt exactly this way, so the
+  // finding is based on the decoded calldata and rated like a fresh approval.
   const args = decoded.intent.args ?? {};
+  const target = decoded.intent.target ?? "";
+  const isUnlimited = (v?: string) => !!v && (v.includes("max uint256") || (/^\d+$/.test(v) && BigInt(v) >= 1n << 255n));
+  const amountOf = (v?: string) => (v ?? "0").replace(/\s*\(max uint256\)$/, "");
+  const hasExposure = (spender: string) => sim.exposures.some((e) => lc(e.spender) === lc(spender) && lc(e.token) === lc(target));
+  if (sim.outcome === "success" && sim.mode === "transaction") {
+    if ((decoded.intent.functionName === "approve" || decoded.intent.functionName === "increaseAllowance") && args.spender && amountOf(args.amount ?? args.addedValue) !== "0" && !hasExposure(args.spender)) {
+      const label = tokenLabel(target, sim.tokens);
+      const unlimited = decoded.intent.functionName === "approve" && isUnlimited(args.amount);
+      add({
+        ruleId: unlimited ? "approval.erc20-unlimited" : "approval.erc20",
+        severity: unlimited ? "high" : "medium",
+        title: `${unlimited ? "Re-confirms unlimited" : "Re-confirms"} ${label} spending for ${short(args.spender)}`.replace(/\s+/g, " "),
+        explanation: `${short(args.spender)} (${accountKind(sim.accounts, args.spender)}) can already spend ${unlimited ? "any amount of" : "this much of"} your ${label}; this request asks you to authorise it again. Sites that keep asking for the same approval are a drainer pattern — revoke the allowance instead of confirming.`,
+        confidence: "high",
+        evidenceType: "decoded-calldata",
+        evidence: [
+          { kind: "calldata", summary: decoded.intent.summary, data: args },
+          { kind: "simulation", summary: "allowance unchanged by this transaction (already granted)" },
+        ],
+      });
+    }
+    if (decoded.intent.functionName === "setApprovalForAll" && args.operator && args.approved === "true" && !hasExposure(args.operator)) {
+      const label = tokenLabel(target, sim.tokens);
+      add({
+        ruleId: "approval.operator-all",
+        severity: "high",
+        title: `Re-confirms control of your entire ${label} collection for ${short(args.operator)}`,
+        explanation: `${short(args.operator)} (${accountKind(sim.accounts, args.operator)}) is already an approved operator for every ${label} you own; this request asks you to grant it again. Revoke the operator approval instead of confirming.`,
+        confidence: "high",
+        evidenceType: "decoded-calldata",
+        evidence: [
+          { kind: "calldata", summary: decoded.intent.summary, data: args },
+          { kind: "simulation", summary: "operator approval unchanged by this transaction (already granted)" },
+        ],
+      });
+    }
+  }
+
+  // --- revocations: protective, worth naming explicitly ---
   if (decoded.intent.functionName === "approve" && args.amount === "0" && args.spender) {
     add({
       ruleId: "approval.revoke",
