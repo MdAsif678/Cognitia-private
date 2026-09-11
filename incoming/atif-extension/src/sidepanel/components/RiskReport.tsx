@@ -515,6 +515,50 @@ export const RiskReport: React.FC<RiskReportProps> = ({
           {/* The primary button is emitted first so DOM, tab and visual order agree. */}
           {(preferReject ? [rejectButton, continueButton] : [continueButton, rejectButton])}
         </div>
+        <div style={{ marginTop: '10px', width: '100%' }}>
+          <button
+            type="button"
+            id="btn-detailed-analysis"
+            className="btn btn-ghost"
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '13px',
+              padding: '8px 12px',
+              border: '1px solid var(--line-2, #ccc)',
+              borderRadius: '6px',
+              background: 'var(--surface, #fff)',
+              cursor: 'pointer',
+              fontWeight: 500,
+            }}
+            onClick={() => {
+              try {
+                const url = new URL('http://localhost:3000/analysis.html');
+                url.searchParams.set('requestId', snapshot.requestId || '');
+                url.searchParams.set('severity', sevMeta.tone || 'unknown');
+                url.searchParams.set('method', snapshot.method || '');
+                url.searchParams.set('origin', snapshot.origin || '');
+                url.searchParams.set('account', snapshot.account || '');
+                url.searchParams.set('target', details.targetFull || '');
+                url.searchParams.set('value', details.valueEth || '0 ETH');
+                url.searchParams.set('summary', summary.lead || '');
+                if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+                  chrome.tabs.create({ url: url.toString() });
+                } else {
+                  window.open(url.toString(), '_blank');
+                }
+              } catch (err) {
+                console.error('[Sidepanel] Failed to open detailed analysis page:', err);
+              }
+            }}
+          >
+            <span>Detailed Analysis</span>
+            <Icon name="arrow" size={13} />
+          </button>
+        </div>
         <p className="footnote">
           {preferReject ? 'Rejecting is the safe choice for this request. ' : ''}
           Reject safely cancels with error code 4001 without opening MetaMask.

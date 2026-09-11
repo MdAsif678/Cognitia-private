@@ -6,7 +6,6 @@ import {
   SidepanelAction,
 } from '../shared/types';
 import { ARCHITECTURAL_LIMITATION_DISCLAIMER } from '../shared/constants';
-import { ALL_FIXTURES } from '../shared/fixtures';
 import { Icon } from './components/Icon';
 import { Loading } from './components/Loading';
 import { RiskReport } from './components/RiskReport';
@@ -17,24 +16,12 @@ import { Forwarding } from './components/Forwarding';
 import { Failed } from './components/Failed';
 import './styles.css';
 
-/** Developer preview entries. "live" is the real interceptor. */
-const FIXTURE_OPTIONS: ReadonlyArray<{ key: string; label: string }> = [
-  { key: 'live', label: 'Live interceptor (waiting for a dapp)' },
-  { key: 'benign', label: '1. Benign transfer (0.05 ETH)' },
-  { key: 'nftApproval', label: '2. NFT setApprovalForAll (BAYC)' },
-  { key: 'unlimitedErc20', label: '3. Unlimited ERC-20 approval (USDC)' },
-  { key: 'reverted', label: '4. Reverted transaction' },
-  { key: 'conditionalPermit', label: '5. Conditional permit (EIP-712)' },
-  { key: 'failedAnalysis', label: '6. Failed analysis (unverified)' },
-];
-
 const SUPPORTED_METHODS = ['eth_sendTransaction', 'eth_signTypedData_v4', 'personal_sign'];
 
 export const App: React.FC = () => {
   const [activeRequest, setActiveRequest] = useState<PendingRequestSnapshot | null>(null);
   const [status, setStatus] = useState<RequestStatus>('IDLE');
   const [statusError, setStatusError] = useState<string | undefined>();
-  const [fixtureKey, setFixtureKey] = useState<string>('live');
 
   // Hydrate active request from service worker on mount
   useEffect(() => {
@@ -116,22 +103,7 @@ export const App: React.FC = () => {
     setActiveRequest(null);
     setStatus('IDLE');
     setStatusError(undefined);
-    setFixtureKey('live');
   };
-
-  const handleSelectFixture = (key: string) => {
-    setFixtureKey(key);
-    if (key === 'live') {
-      handleReset();
-    } else if (ALL_FIXTURES[key]) {
-      const fix = ALL_FIXTURES[key];
-      setActiveRequest(fix.snapshot);
-      setStatus('ANALYSIS_READY');
-      setStatusError(undefined);
-    }
-  };
-
-  const isLive = fixtureKey === 'live';
 
   return (
     <div className="app">
@@ -145,30 +117,11 @@ export const App: React.FC = () => {
             <div className="brand-sub">Interceptor</div>
           </div>
         </div>
-        <div className="live" data-mode={isLive ? 'live' : 'preview'} role="status">
+        <div className="live" data-mode="live" role="status">
           <span className="live-dot" aria-hidden="true" />
-          {isLive ? 'Armed' : 'Preview'}
+          Armed
         </div>
       </header>
-
-      {/* Developer preview of the six reference reports */}
-      <div className="devbar">
-        <label className="devbar-label" htmlFor="fixture-selector">
-          Preview
-        </label>
-        <select
-          id="fixture-selector"
-          className="select"
-          value={fixtureKey}
-          onChange={(e) => handleSelectFixture(e.target.value)}
-        >
-          {FIXTURE_OPTIONS.map((option) => (
-            <option key={option.key} value={option.key}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <main className="view">
         {status === 'IDLE' && (
