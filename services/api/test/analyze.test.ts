@@ -112,7 +112,7 @@ describe("approvals already in force (empty diff)", () => {
   it("does not double-report when the simulation already found the exposure", async () => {
     const data = "0x095ea7b3" + pad(SPENDER) + "f".repeat(64);
     const sim = partialSim({
-      exposures: [{ kind: "erc20-allowance", basis: "granted", standard: "erc20", token: TOKEN, owner: ACCOUNT, spender: SPENDER, amount: (2n ** 256n - 1n).toString(), unlimited: true, atRisk: {} }],
+      exposures: [{ kind: "erc20-allowance", basis: "granted", standard: "erc20", scope: "all", token: TOKEN, owner: ACCOUNT, spender: SPENDER, amount: (2n ** 256n - 1n).toString(), unlimited: true, atRisk: {} }],
     });
     const r = await analyze(withData(data), deps(() => Promise.resolve(sim)));
     expect(r.findings.filter((f) => f.ruleId === "approval.erc20-unlimited")).toHaveLength(1);
