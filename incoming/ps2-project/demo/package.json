@@ -1,0 +1,12 @@
+{
+  "name": "ps2-security-demo",
+  "version": "1.0.0",
+  "description": "PS2 Malicious Transaction & Wallet Interceptor Demo Website",
+  "scripts": {
+    "start": "python3 serve.py",
+    "serve": "npx serve ."
+  },
+  "keywords": ["web3", "security", "interceptor", "ethereum", "anvil"],
+  "author": "Syed",
+  "license": "MIT"
+}

@@ -1,0 +1,250 @@
+{
+  "request": {
+    "requestId": "fixture-nft-approval",
+    "origin": "https://claim-rewards.example",
+    "chainId": 31337,
+    "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "method": "eth_sendTransaction",
+    "params": [
+      {
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+        "data": "0xa22cb465000000000000000000000000a77ac0000000000000000000000000000000bad10000000000000000000000000000000000000000000000000000000000000001"
+      }
+    ]
+  },
+  "report": {
+    "requestId": "fixture-nft-approval",
+    "requestHash": "0x31558aa06dd075e42a919b2610a8576664a60fc497168a009122b2d8390c2c9f",
+    "status": "complete",
+    "severity": "high",
+    "summary": "HIGH RISK — Grants control of your entire TAPE collection",
+    "fork": {
+      "chainId": 31337,
+      "blockNumber": "12",
+      "blockHash": "0x88a29e1bbfb228c173a40c44178e7e8e56804bcd38a8c4d2d573aa5ac95be8aa",
+      "blockTimestamp": "1789144044",
+      "verified": true
+    },
+    "simulation": {
+      "mode": "transaction",
+      "outcome": "success",
+      "assumptions": [
+        "Executed on a private Anvil fork of Local demo chain pinned to block #12 (0x88a29e1bbfb228c173a40c44178e7e8e56804bcd38a8c4d2d573aa5ac95be8aa); nothing was broadcast.",
+        "The sender was impersonated on the fork, so no signature was needed to execute the unsigned transaction.",
+        "Gas is priced at zero on the fork: native balance changes exclude the network fee, which is estimated separately.",
+        "Transactions that land before this one on the real chain could change the outcome.",
+        "Only assets referenced by the calldata, logs or execution trace were compared; the wallet's other holdings were not enumerated."
+      ],
+      "gas": {
+        "used": "45917",
+        "estimatedFeeWei": "56787759339427",
+        "effectiveGasPrice": "1236748031",
+        "balanceCoversFee": true
+      }
+    },
+    "intent": {
+      "kind": "transaction",
+      "known": true,
+      "summary": "setApprovalForAll(address,bool) on 0xe7f1…0512",
+      "target": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "selector": "0xa22cb465",
+      "functionName": "setApprovalForAll",
+      "signature": "setApprovalForAll(address,bool)",
+      "args": {
+        "operator": "0xA77ac0000000000000000000000000000000BAd1",
+        "approved": "true"
+      },
+      "source": "standard-abi",
+      "rawCalldata": "0xa22cb465000000000000000000000000a77ac0000000000000000000000000000000bad10000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "findings": [
+      {
+        "id": "approval.operator-all#0",
+        "ruleId": "approval.operator-all",
+        "severity": "high",
+        "title": "Grants control of your entire TAPE collection",
+        "description": "0xA77a…BAd1 (a regular account (not a contract)) could transfer every TAPE you own (currently 3) and any you receive later, until the approval is revoked. No NFTs move when you confirm this.",
+        "explanation": "0xA77a…BAd1 (a regular account (not a contract)) could transfer every TAPE you own (currently 3) and any you receive later, until the approval is revoked. No NFTs move when you confirm this.",
+        "confidence": "high",
+        "evidenceType": "simulated-state",
+        "evidence": [
+          {
+            "kind": "state-change",
+            "summary": "operator-approval 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 → 0xA77ac0000000000000000000000000000000BAd1",
+            "data": {
+              "kind": "operator-approval",
+              "basis": "granted",
+              "token": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+              "standard": "erc721",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "spender": "0xA77ac0000000000000000000000000000000BAd1",
+              "unlimited": true,
+              "atRisk": {
+                "nftCount": "3",
+                "tokenIds": [
+                  "1",
+                  "2",
+                  "3"
+                ]
+              },
+              "scope": "Every current and future token in this collection, until the approval is revoked"
+            }
+          }
+        ]
+      }
+    ],
+    "immediateChanges": [
+      {
+        "timing": "immediate",
+        "type": "operator-approval",
+        "asset": "TAPE",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "amount": "all tokens in collection",
+        "spender": "0xA77ac0000000000000000000000000000000BAd1",
+        "kind": "operator-approval",
+        "token": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "standard": "erc721",
+        "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "operator": "0xA77ac0000000000000000000000000000000BAd1",
+        "before": false,
+        "after": true
+      }
+    ],
+    "conditionalChanges": [
+      {
+        "timing": "conditional",
+        "type": "erc721-owner",
+        "asset": "TAPE #1",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xA77ac0000000000000000000000000000000BAd1",
+        "amount": "1",
+        "kind": "erc721-owner",
+        "token": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "tokenId": "1",
+        "before": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "after": "0xA77ac0000000000000000000000000000000BAd1"
+      },
+      {
+        "timing": "conditional",
+        "type": "erc721-owner",
+        "asset": "TAPE #2",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xA77ac0000000000000000000000000000000BAd1",
+        "amount": "1",
+        "kind": "erc721-owner",
+        "token": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "tokenId": "2",
+        "before": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "after": "0xA77ac0000000000000000000000000000000BAd1"
+      },
+      {
+        "timing": "conditional",
+        "type": "erc721-owner",
+        "asset": "TAPE #3",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xA77ac0000000000000000000000000000000BAd1",
+        "amount": "1",
+        "kind": "erc721-owner",
+        "token": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "tokenId": "3",
+        "before": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "after": "0xA77ac0000000000000000000000000000000BAd1"
+      }
+    ],
+    "potentialExposure": [
+      {
+        "kind": "operator-approval",
+        "basis": "granted",
+        "token": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "standard": "erc721",
+        "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "spender": "0xA77ac0000000000000000000000000000000BAd1",
+        "unlimited": true,
+        "atRisk": {
+          "nftCount": "3",
+          "tokenIds": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "scope": "Every current and future token in this collection, until the approval is revoked",
+        "asset": "TAPE",
+        "description": "0xA77ac0000000000000000000000000000000BAd1 could take an unlimited amount — every current and future token in this collection, until the approval is revoked. You currently hold 3 TAPE."
+      }
+    ],
+    "assetFlows": [
+      {
+        "timing": "conditional",
+        "standard": "erc721",
+        "token": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xA77ac0000000000000000000000000000000BAd1",
+        "amount": "1",
+        "tokenId": "1",
+        "source": "log",
+        "step": "follow-up: operator 0xA77ac0000000000000000000000000000000BAd1 takes token #1"
+      },
+      {
+        "timing": "conditional",
+        "standard": "erc721",
+        "token": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xA77ac0000000000000000000000000000000BAd1",
+        "amount": "1",
+        "tokenId": "2",
+        "source": "log",
+        "step": "follow-up: operator 0xA77ac0000000000000000000000000000000BAd1 takes token #2"
+      },
+      {
+        "timing": "conditional",
+        "standard": "erc721",
+        "token": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xA77ac0000000000000000000000000000000BAd1",
+        "amount": "1",
+        "tokenId": "3",
+        "source": "log",
+        "step": "follow-up: operator 0xA77ac0000000000000000000000000000000BAd1 takes token #3"
+      }
+    ],
+    "tokens": [
+      {
+        "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "standard": "erc721",
+        "name": "Test Apes",
+        "symbol": "TAPE"
+      }
+    ],
+    "coverage": {
+      "checked": [
+        "Local demo chain state at block #12 (fork block hash verified against upstream)",
+        "execution trace for \"request\" (1 call frames)",
+        "native balance of 0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "native balance of 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "TAPE (0xe7f1…0512) operator approval 0x7099…79C8 → 0xA77a…BAd1",
+        "TAPE (0xe7f1…0512) NFT count of 0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "owner of TAPE (0xe7f1…0512) #1",
+        "approved address for TAPE (0xe7f1…0512) #1",
+        "owner of TAPE (0xe7f1…0512) #2",
+        "approved address for TAPE (0xe7f1…0512) #2",
+        "owner of TAPE (0xe7f1…0512) #3",
+        "approved address for TAPE (0xe7f1…0512) #3",
+        "execution trace for \"follow-up: operator 0xA77ac0000000000000000000000000000000BAd1 takes token #1\" (1 call frames)",
+        "execution trace for \"follow-up: operator 0xA77ac0000000000000000000000000000000BAd1 takes token #2\" (1 call frames)",
+        "execution trace for \"follow-up: operator 0xA77ac0000000000000000000000000000000BAd1 takes token #3\" (1 call frames)",
+        "native balance of 0xA77ac0000000000000000000000000000000BAd1",
+        "TAPE (0xe7f1…0512) NFT count of 0xA77ac0000000000000000000000000000000BAd1"
+      ],
+      "missing": [],
+      "complete": true
+    },
+    "analyzedAt": "2026-09-11T16:27:26.339Z",
+    "durationMs": 1135,
+    "engine": {
+      "simulator": "simulator@0.1.0",
+      "riskEngine": "baseline@0.1.0"
+    }
+  }
+}

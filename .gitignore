@@ -1,0 +1,22 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+cache/
+out/
+
+# Local archives/backups (exceed GitHub 100MB limit)
+*.zip
+*.rar
+# Sidelined nested git metadata
+.git.bak
+
+# Foundry vendored deps (restore with: cd incoming/ps2-project && forge install)
+incoming/ps2-project/lib/
+# Build/tooling artifacts
+*.tsbuildinfo
+.claude/

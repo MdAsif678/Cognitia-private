@@ -1,0 +1,221 @@
+{
+  "request": {
+    "requestId": "fixture-permit",
+    "origin": "https://claim-rewards.example",
+    "chainId": 31337,
+    "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "method": "eth_signTypedData_v4",
+    "params": [
+      "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "{\"types\":{\"EIP712Domain\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"version\",\"type\":\"string\"},{\"name\":\"chainId\",\"type\":\"uint256\"},{\"name\":\"verifyingContract\",\"type\":\"address\"}],\"Permit\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"spender\",\"type\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint256\"},{\"name\":\"deadline\",\"type\":\"uint256\"}]},\"primaryType\":\"Permit\",\"domain\":{\"name\":\"Test USD\",\"version\":\"1\",\"chainId\":31337,\"verifyingContract\":\"0x5fbdb2315678afecb367f032d93f642f64180aa3\"},\"message\":{\"owner\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"spender\":\"0xA77ac0000000000000000000000000000000BAd1\",\"value\":\"115792089237316195423570985008687907853269984665640564039457584007913129639935\",\"nonce\":\"0\",\"deadline\":\"99999999999\"}}"
+    ]
+  },
+  "report": {
+    "requestId": "fixture-permit",
+    "requestHash": "0xcbb87ca2d074c28fd9e0f9897c987b765aac516bd3b8799d52e5cf55fba34cec",
+    "status": "complete",
+    "severity": "high",
+    "summary": "HIGH RISK — Signature grants unlimited TUSD spending to 0xA77a…BAd1",
+    "fork": {
+      "chainId": 31337,
+      "blockNumber": "12",
+      "blockHash": "0x88a29e1bbfb228c173a40c44178e7e8e56804bcd38a8c4d2d573aa5ac95be8aa",
+      "blockTimestamp": "1789144044",
+      "verified": true
+    },
+    "simulation": {
+      "mode": "conditional-signature",
+      "outcome": "success",
+      "assumptions": [
+        "Conditional outcome if this signature is signed and accepted — signing alone moves nothing on-chain.",
+        "The unsigned signature was NOT executed. Its authority was modeled by impersonating the owner and calling approve(spender, amount) on a private fork of Local demo chain at block #12.",
+        "The spender was then impersonated and immediately transferred the maximum it could (min(allowance, balance)).",
+        "Only the permit's token was inspected; the wallet's other holdings were not enumerated."
+      ],
+      "signatureChecks": [
+        {
+          "name": "token-code",
+          "status": "pass",
+          "detail": "Token contract exists at the fork block"
+        },
+        {
+          "name": "chain-id",
+          "status": "pass",
+          "detail": "Signature domain chainId 31337 matches the wallet's chain"
+        },
+        {
+          "name": "verifying-contract",
+          "status": "pass",
+          "detail": "Domain verifyingContract is the token"
+        },
+        {
+          "name": "nonce",
+          "status": "pass",
+          "detail": "Permit nonce 0 is the owner's next nonce — the signature would be immediately usable"
+        },
+        {
+          "name": "deadline",
+          "status": "pass",
+          "detail": "Valid until 5138-11-16T09:46:39.000Z (more than a year — effectively no expiry)"
+        },
+        {
+          "name": "domain-separator",
+          "status": "pass",
+          "detail": "Signed domain matches the token's DOMAIN_SEPARATOR()"
+        }
+      ]
+    },
+    "intent": {
+      "kind": "typed-data",
+      "known": true,
+      "summary": "ERC-2612 permit: let 0xA77a…BAd1 spend tokens of 0x5FbD…0aa3",
+      "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "functionName": "Permit",
+      "args": {
+        "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "spender": "0xA77ac0000000000000000000000000000000BAd1",
+        "value": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+        "nonce": "0",
+        "deadline": "99999999999"
+      },
+      "source": "typed-data"
+    },
+    "findings": [
+      {
+        "id": "approval.erc20-unlimited#0",
+        "ruleId": "approval.erc20-unlimited",
+        "severity": "high",
+        "title": "Signature grants unlimited TUSD spending to 0xA77a…BAd1",
+        "description": "0xA77a…BAd1 (a regular account (not a contract)) could move any amount of your TUSD — you currently hold 1,000 TUSD — at any time until the approval is revoked. Signing moves nothing by itself; the signature becomes an approval once anyone submits it.",
+        "explanation": "0xA77a…BAd1 (a regular account (not a contract)) could move any amount of your TUSD — you currently hold 1,000 TUSD — at any time until the approval is revoked. Signing moves nothing by itself; the signature becomes an approval once anyone submits it.",
+        "confidence": "high",
+        "evidenceType": "signature",
+        "evidence": [
+          {
+            "kind": "signature",
+            "summary": "erc20-allowance 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 → 0xA77ac0000000000000000000000000000000BAd1",
+            "data": {
+              "kind": "erc20-allowance",
+              "basis": "conditional-signature",
+              "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+              "standard": "erc20",
+              "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "spender": "0xA77ac0000000000000000000000000000000BAd1",
+              "amount": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+              "unlimited": true,
+              "exceedsTotalSupply": true,
+              "atRisk": {
+                "erc20Balance": "1000000000000000000000"
+              },
+              "scope": "Unlimited amount of this token once the signature is submitted"
+            }
+          }
+        ]
+      }
+    ],
+    "immediateChanges": [],
+    "conditionalChanges": [
+      {
+        "timing": "conditional",
+        "type": "erc20-allowance",
+        "asset": "TUSD",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "amount": "unlimited",
+        "spender": "0xA77ac0000000000000000000000000000000BAd1",
+        "kind": "erc20-allowance",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "before": "0",
+        "after": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+        "unlimitedBefore": false,
+        "unlimitedAfter": true
+      },
+      {
+        "timing": "conditional",
+        "type": "erc20-balance",
+        "asset": "TUSD",
+        "amount": "-1,000 TUSD",
+        "kind": "erc20-balance",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "before": "1000000000000000000000",
+        "after": "0",
+        "delta": "-1000000000000000000000"
+      },
+      {
+        "timing": "conditional",
+        "type": "erc20-balance",
+        "asset": "TUSD",
+        "amount": "+1,000 TUSD",
+        "kind": "erc20-balance",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "account": "0xA77ac0000000000000000000000000000000BAd1",
+        "before": "0",
+        "after": "1000000000000000000000",
+        "delta": "1000000000000000000000"
+      }
+    ],
+    "potentialExposure": [
+      {
+        "kind": "erc20-allowance",
+        "basis": "conditional-signature",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "standard": "erc20",
+        "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "spender": "0xA77ac0000000000000000000000000000000BAd1",
+        "amount": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+        "unlimited": true,
+        "exceedsTotalSupply": true,
+        "atRisk": {
+          "erc20Balance": "1000000000000000000000"
+        },
+        "scope": "Unlimited amount of this token once the signature is submitted",
+        "asset": "TUSD",
+        "description": "0xA77ac0000000000000000000000000000000BAd1 could take an unlimited amount — unlimited amount of this token once the signature is submitted. You currently hold 1,000 TUSD."
+      }
+    ],
+    "assetFlows": [
+      {
+        "timing": "conditional",
+        "standard": "erc20",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xA77ac0000000000000000000000000000000BAd1",
+        "amount": "1000000000000000000000",
+        "source": "log",
+        "step": "follow-up: 0xA77ac0000000000000000000000000000000BAd1 pulls tokens with transferFrom"
+      }
+    ],
+    "tokens": [
+      {
+        "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "standard": "erc20",
+        "name": "Test USD",
+        "symbol": "TUSD",
+        "decimals": 18,
+        "totalSupply": "1000000000000000000000"
+      }
+    ],
+    "coverage": {
+      "checked": [
+        "Local demo chain state at block #12 (fork block hash verified against upstream)",
+        "execution trace for \"model: erc2612-permit as approve(0xA77ac0000000000000000000000000000000BAd1, 115792089237316195423570985008687907853269984665640564039457584007913129639935) from owner\" (1 call frames)",
+        "execution trace for \"follow-up: 0xA77ac0000000000000000000000000000000BAd1 pulls tokens with transferFrom\" (1 call frames)",
+        "native balance of 0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "native balance of 0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "native balance of 0xA77ac0000000000000000000000000000000BAd1",
+        "TUSD (0x5FbD…0aa3) allowance 0x7099…79C8 → 0xA77a…BAd1",
+        "TUSD (0x5FbD…0aa3) balance of 0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "TUSD (0x5FbD…0aa3) balance of 0xA77ac0000000000000000000000000000000BAd1"
+      ],
+      "missing": [],
+      "complete": true
+    },
+    "analyzedAt": "2026-09-11T16:27:28.417Z",
+    "durationMs": 556,
+    "engine": {
+      "simulator": "simulator@0.1.0",
+      "riskEngine": "baseline@0.1.0"
+    }
+  }
+}

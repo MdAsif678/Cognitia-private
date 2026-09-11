@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Pre-Execution Transaction Interceptor & Simulator",
+  "version": "0.1.0",
+  "description": "Pre-Execution Transaction Interceptor & Malicious Signature Simulator (Hackathon Prototype)",
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "tabs",
+    "activeTab"
+  ],
+  "action": {
+    "default_title": "Open Transaction Interceptor"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/index.html"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["page/provider-interceptor.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/bridge.js"],
+      "world": "ISOLATED",
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["page/provider-interceptor.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

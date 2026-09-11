@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  # Anvil local test blockchain
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: ps2-anvil
+    entrypoint: ["anvil", "--host", "0.0.0.0", "--port", "8545", "--chain-id", "31337"]
+    ports:
+      - "8545:8545"
+    restart: unless-stopped
+
+  # PS2 Demo Website
+  demo-website:
+    image: python:3.11-alpine
+    container_name: ps2-demo-website
+    working_dir: /app
+    volumes:
+      - ../demo:/app
+    command: python3 -m http.server 3000 --bind 0.0.0.0
+    ports:
+      - "3000:3000"
+    depends_on:
+      - anvil
+    restart: unless-stopped

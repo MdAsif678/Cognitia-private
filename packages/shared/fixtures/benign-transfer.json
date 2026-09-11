@@ -1,0 +1,157 @@
+{
+  "request": {
+    "requestId": "fixture-benign",
+    "origin": "https://claim-rewards.example",
+    "chainId": 31337,
+    "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "method": "eth_sendTransaction",
+    "params": [
+      {
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+        "data": "0xa9059cbb000000000000000000000000f00df00df00df00df00df00df00df00df00df00d0000000000000000000000000000000000000000000000015af1d78b58c40000"
+      }
+    ]
+  },
+  "report": {
+    "requestId": "fixture-benign",
+    "requestHash": "0xf5cbbcbd14a2da09ae0660ecb68b9455f5929dd47b68727fc7dba66a4964450a",
+    "status": "complete",
+    "severity": "low",
+    "summary": "LOW OBSERVED RISK — Sends 25 TUSD to 0xf00D…f00d",
+    "fork": {
+      "chainId": 31337,
+      "blockNumber": "12",
+      "blockHash": "0x88a29e1bbfb228c173a40c44178e7e8e56804bcd38a8c4d2d573aa5ac95be8aa",
+      "blockTimestamp": "1789144044",
+      "verified": true
+    },
+    "simulation": {
+      "mode": "transaction",
+      "outcome": "success",
+      "assumptions": [
+        "Executed on a private Anvil fork of Local demo chain pinned to block #12 (0x88a29e1bbfb228c173a40c44178e7e8e56804bcd38a8c4d2d573aa5ac95be8aa); nothing was broadcast.",
+        "The sender was impersonated on the fork, so no signature was needed to execute the unsigned transaction.",
+        "Gas is priced at zero on the fork: native balance changes exclude the network fee, which is estimated separately.",
+        "Transactions that land before this one on the real chain could change the outcome.",
+        "Only assets referenced by the calldata, logs or execution trace were compared; the wallet's other holdings were not enumerated."
+      ],
+      "gas": {
+        "used": "51679",
+        "estimatedFeeWei": "63913901494049",
+        "effectiveGasPrice": "1236748031",
+        "balanceCoversFee": true
+      }
+    },
+    "intent": {
+      "kind": "transaction",
+      "known": true,
+      "summary": "transfer(address,uint256) on 0x5FbD…0aa3",
+      "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "selector": "0xa9059cbb",
+      "functionName": "transfer",
+      "signature": "transfer(address,uint256)",
+      "args": {
+        "to": "0xf00Df00dF00dF00dF00DF00Df00df00df00Df00d",
+        "amount": "25000000000000000000"
+      },
+      "source": "standard-abi",
+      "rawCalldata": "0xa9059cbb000000000000000000000000f00df00df00df00df00df00df00df00df00df00d0000000000000000000000000000000000000000000000015af1d78b58c40000"
+    },
+    "findings": [
+      {
+        "id": "transfer.expected#0",
+        "ruleId": "transfer.expected",
+        "severity": "low",
+        "title": "Sends 25 TUSD to 0xf00D…f00d",
+        "description": "This matches what the request says it does. Check the amount and recipient.",
+        "explanation": "This matches what the request says it does. Check the amount and recipient.",
+        "confidence": "high",
+        "evidenceType": "simulated-state",
+        "evidence": [
+          {
+            "kind": "state-change",
+            "summary": "25 TUSD leaves your wallet",
+            "data": {
+              "timing": "immediate",
+              "kind": "erc20-balance",
+              "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+              "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "before": "1000000000000000000000",
+              "after": "975000000000000000000",
+              "delta": "-25000000000000000000"
+            }
+          }
+        ]
+      }
+    ],
+    "immediateChanges": [
+      {
+        "timing": "immediate",
+        "type": "erc20-balance",
+        "asset": "TUSD",
+        "amount": "-25 TUSD",
+        "kind": "erc20-balance",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "before": "1000000000000000000000",
+        "after": "975000000000000000000",
+        "delta": "-25000000000000000000"
+      },
+      {
+        "timing": "immediate",
+        "type": "erc20-balance",
+        "asset": "TUSD",
+        "amount": "+25 TUSD",
+        "kind": "erc20-balance",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "account": "0xf00Df00dF00dF00dF00DF00Df00df00df00Df00d",
+        "before": "0",
+        "after": "25000000000000000000",
+        "delta": "25000000000000000000"
+      }
+    ],
+    "conditionalChanges": [],
+    "potentialExposure": [],
+    "assetFlows": [
+      {
+        "timing": "immediate",
+        "standard": "erc20",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xf00Df00dF00dF00dF00DF00Df00df00df00Df00d",
+        "amount": "25000000000000000000",
+        "source": "log",
+        "step": "request"
+      }
+    ],
+    "tokens": [
+      {
+        "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "standard": "erc20",
+        "name": "Test USD",
+        "symbol": "TUSD",
+        "decimals": 18,
+        "totalSupply": "1000000000000000000000"
+      }
+    ],
+    "coverage": {
+      "checked": [
+        "Local demo chain state at block #12 (fork block hash verified against upstream)",
+        "execution trace for \"request\" (1 call frames)",
+        "native balance of 0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "native balance of 0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "TUSD (0x5FbD…0aa3) balance of 0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "TUSD (0x5FbD…0aa3) balance of 0xf00Df00dF00dF00dF00DF00Df00df00df00Df00d"
+      ],
+      "missing": [],
+      "complete": true
+    },
+    "analyzedAt": "2026-09-11T16:27:25.189Z",
+    "durationMs": 415,
+    "engine": {
+      "simulator": "simulator@0.1.0",
+      "riskEngine": "baseline@0.1.0"
+    }
+  }
+}

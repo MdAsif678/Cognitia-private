@@ -1,0 +1,112 @@
+{
+  "request": {
+    "requestId": "fixture-revert",
+    "origin": "https://claim-rewards.example",
+    "chainId": 31337,
+    "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "method": "eth_sendTransaction",
+    "params": [
+      {
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+        "data": "0xcd2da9b5"
+      }
+    ]
+  },
+  "report": {
+    "requestId": "fixture-revert",
+    "requestHash": "0x44597402801e78adaf0e2c9cfbab75dbc0ffafd2563c59f65a9a6a0a4374c8bf",
+    "status": "complete",
+    "severity": "medium",
+    "summary": "CAUTION — This transaction is expected to fail",
+    "fork": {
+      "chainId": 31337,
+      "blockNumber": "12",
+      "blockHash": "0x88a29e1bbfb228c173a40c44178e7e8e56804bcd38a8c4d2d573aa5ac95be8aa",
+      "blockTimestamp": "1789144044",
+      "verified": true
+    },
+    "simulation": {
+      "mode": "transaction",
+      "outcome": "revert",
+      "assumptions": [
+        "Executed on a private Anvil fork of Local demo chain pinned to block #12 (0x88a29e1bbfb228c173a40c44178e7e8e56804bcd38a8c4d2d573aa5ac95be8aa); nothing was broadcast.",
+        "The sender was impersonated on the fork, so no signature was needed to execute the unsigned transaction.",
+        "Gas is priced at zero on the fork: native balance changes exclude the network fee, which is estimated separately.",
+        "Transactions that land before this one on the real chain could change the outcome.",
+        "Only assets referenced by the calldata, logs or execution trace were compared; the wallet's other holdings were not enumerated."
+      ],
+      "revertReason": "Rewards period has ended",
+      "gas": {
+        "used": "21359",
+        "estimatedFeeWei": "26415701194129",
+        "effectiveGasPrice": "1236748031",
+        "balanceCoversFee": true
+      }
+    },
+    "intent": {
+      "kind": "transaction",
+      "known": false,
+      "summary": "Unrecognised function 0xcd2da9b5 on 0xCf7E…0Fc9 — effects taken from simulation only",
+      "target": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "selector": "0xcd2da9b5",
+      "source": "none",
+      "rawCalldata": "0xcd2da9b5"
+    },
+    "findings": [
+      {
+        "id": "simulation.revert#0",
+        "ruleId": "simulation.revert",
+        "severity": "medium",
+        "title": "This transaction is expected to fail",
+        "description": "On current chain state the transaction reverts with \"Rewards period has ended\". You would pay gas and nothing would happen.",
+        "explanation": "On current chain state the transaction reverts with \"Rewards period has ended\". You would pay gas and nothing would happen.",
+        "confidence": "high",
+        "evidenceType": "simulated-state",
+        "evidence": [
+          {
+            "kind": "simulation",
+            "summary": "reverted: Rewards period has ended"
+          }
+        ]
+      },
+      {
+        "id": "decode.unknown-function#1",
+        "ruleId": "decode.unknown-function",
+        "severity": "low",
+        "title": "Unrecognised function 0xcd2da9b5",
+        "description": "The function could not be decoded; the findings above come from simulating it on current chain state.",
+        "explanation": "The function could not be decoded; the findings above come from simulating it on current chain state.",
+        "confidence": "medium",
+        "evidenceType": "decoded-calldata",
+        "evidence": [
+          {
+            "kind": "calldata",
+            "summary": "Unrecognised function 0xcd2da9b5 on 0xCf7E…0Fc9 — effects taken from simulation only"
+          }
+        ]
+      }
+    ],
+    "immediateChanges": [],
+    "conditionalChanges": [],
+    "potentialExposure": [],
+    "assetFlows": [],
+    "tokens": [],
+    "coverage": {
+      "checked": [
+        "Local demo chain state at block #12 (fork block hash verified against upstream)",
+        "execution trace for \"request\" (1 call frames)",
+        "native balance of 0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "native balance of 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
+      ],
+      "missing": [],
+      "complete": true
+    },
+    "analyzedAt": "2026-09-11T16:27:27.860Z",
+    "durationMs": 368,
+    "engine": {
+      "simulator": "simulator@0.1.0",
+      "riskEngine": "baseline@0.1.0"
+    }
+  }
+}

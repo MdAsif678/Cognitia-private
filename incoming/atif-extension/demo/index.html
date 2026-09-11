@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pre-Execution Interceptor - Demo DApp</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: #080c16;
+        color: #f1f5f9;
+        min-height: 100vh;
+        padding: 24px 20px 60px;
+      }
+      .container {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #1e293b;
+        margin-bottom: 24px;
+      }
+      .logo-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .logo-icon {
+        font-size: 28px;
+        background: rgba(99, 102, 241, 0.15);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      h1 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #f8fafc;
+        letter-spacing: -0.3px;
+      }
+      .tagline {
+        font-size: 12px;
+        color: #94a3b8;
+      }
+      .btn {
+        font-family: 'Outfit', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 10px 18px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: none;
+      }
+      .btn-primary {
+        background: #4f46e5;
+        color: #ffffff;
+      }
+      .btn-primary:hover {
+        background: #4338ca;
+      }
+      .btn-secondary {
+        background: #1e293b;
+        color: #cbd5e1;
+        border: 1px solid #334155;
+      }
+      .btn-secondary:hover {
+        background: #334155;
+      }
+      .btn-danger {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+        border: 1px solid #ef4444;
+      }
+      .btn-danger:hover {
+        background: rgba(239, 68, 68, 0.25);
+      }
+      .btn-action {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px;
+        border-radius: 12px;
+        background: #131b2e;
+        border: 1px solid #1e293b;
+        color: #f8fafc;
+        text-align: left;
+        cursor: pointer;
+        transition: transform 0.1s ease, border-color 0.15s ease;
+      }
+      .btn-action:hover {
+        transform: translateY(-2px);
+        border-color: #4f46e5;
+      }
+      .btn-action-title {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-action-subtitle {
+        font-size: 11px;
+        color: #94a3b8;
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .grid-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .card {
+        background: #0f172a;
+        border: 1px solid #1e293b;
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 20px;
+      }
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #1e293b;
+      }
+      .card-title {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #818cf8;
+      }
+      .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+      }
+      .status-item {
+        background: #131b2e;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .status-label {
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+      .status-value {
+        font-size: 12px;
+        font-weight: 600;
+        color: #f1f5f9;
+        font-family: 'JetBrains Mono', monospace;
+        word-break: break-all;
+      }
+      .code-box {
+        background: #080d1a;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        color: #cbd5e1;
+        max-height: 180px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+      }
+      .badge {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .badge-success {
+        background: rgba(34, 197, 94, 0.15);
+        color: #4ade80;
+      }
+      .badge-warning {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+      }
+      .badge-danger {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+      }
+      .badge-info {
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+      }
+      .acceptance-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      @media (max-width: 768px) {
+        .acceptance-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .acceptance-item {
+        background: #131b2e;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .acceptance-title {
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 2px;
+      }
+      .acceptance-desc {
+        color: #94a3b8;
+        font-size: 11px;
+      }
+      .simulation-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- DApp Header -->
+      <header>
+        <div class="logo-group">
+          <div class="logo-icon">🛡️</div>
+          <div>
+            <h1>Pre-Execution Interceptor - Demo DApp</h1>
+            <p class="tagline">Interactive Acceptance Criteria & Wallet Simulation Testbed</p>
+          </div>
+        </div>
+        <div>
+          <button id="connect-wallet-btn" class="btn btn-primary">Connect Wallet</button>
+        </div>
+      </header>
+
+      <!-- 1. Wallet & Provider Status -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Wallet & Provider Status</span>
+          <span id="connection-status-badge" class="badge badge-info">Initializing</span>
+        </div>
+        <div class="status-grid">
+          <div class="status-item">
+            <div class="status-label">Provider Detected</div>
+            <div id="stat-provider" class="status-value">Checking...</div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Current Account</div>
+            <div id="stat-account" class="status-value">Not Connected</div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Chain ID</div>
+            <div id="stat-chain" class="status-value">0x1 (Mainnet)</div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Wrapping Status</div>
+            <div id="stat-wrapped" class="status-value">Active (MAIN World)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. The 6 Required Test Buttons -->
+      <h3 style="font-size: 14px; font-weight: 700; color: #cbd5e1; margin-bottom: 12px; text-transform: uppercase;">
+        Interactive Signing & Transaction Actions
+      </h3>
+      <div class="grid-actions">
+        <!-- 1. Claim Rewards -->
+        <button id="btn-claim-rewards" class="btn-action">
+          <div class="btn-action-title">
+            <span>🎁 Claim Rewards</span>
+            <span class="badge badge-warning">Intercepted</span>
+          </div>
+          <div class="btn-action-subtitle">eth_sendTransaction (0 ETH to dead contract)</div>
+        </button>
+
+        <!-- 2. Sign Message -->
+        <button id="btn-sign-message" class="btn-action">
+          <div class="btn-action-title">
+            <span>✍️ Sign Message</span>
+            <span class="badge badge-warning">Intercepted</span>
+          </div>
+          <div class="btn-action-subtitle">personal_sign (Harmless greeting message)</div>
+        </button>
+
+        <!-- 3. Sign Typed Data -->
+        <button id="btn-sign-typed-data" class="btn-action">
+          <div class="btn-action-title">
+            <span>📜 Sign Typed Data</span>
+            <span class="badge badge-warning">Intercepted</span>
+          </div>
+          <div class="btn-action-subtitle">eth_signTypedData_v4 (EIP-712 Permit schema)</div>
+        </button>
+
+        <!-- 4. Send Transaction -->
+        <button id="btn-send-tx" class="btn-action">
+          <div class="btn-action-title">
+            <span>💸 Send Transaction</span>
+            <span class="badge badge-warning">Intercepted</span>
+          </div>
+          <div class="btn-action-subtitle">eth_sendTransaction (0.0001 ETH transfer)</div>
+        </button>
+
+        <!-- 5. Normal eth_call -->
+        <button id="btn-eth-call" class="btn-action">
+          <div class="btn-action-title">
+            <span>🔍 Normal eth_call</span>
+            <span class="badge badge-success">Bypasses</span>
+          </div>
+          <div class="btn-action-subtitle">eth_call (Direct read, non-signing)</div>
+        </button>
+
+        <!-- 6. Unsupported Signing Method -->
+        <button id="btn-unsupported" class="btn-action">
+          <div class="btn-action-title">
+            <span>🚫 Unsupported Method</span>
+            <span class="badge badge-danger">Blocked (4200)</span>
+          </div>
+          <div class="btn-action-subtitle">eth_sign (Legacy blind sign variant)</div>
+        </button>
+      </div>
+
+      <!-- 3. Live Request & Result Monitor -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Live Request & Result Monitor</span>
+          <button id="btn-clear-log" class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;">Clear</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">LAST REQUEST</div>
+            <div id="log-last-request" class="code-box">No requests sent yet. Click an action above.</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">LAST RESULT / ERROR</div>
+            <div id="log-last-result" class="code-box">Standby. Awaiting user approval or wallet response.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Debug Panel: INTERCEPTOR STATUS -->
+      <div class="card" style="border-color: #3b82f6;">
+        <div class="card-header">
+          <span class="card-title" style="color: #60a5fa;">Debug Panel: INTERCEPTOR STATUS</span>
+          <span id="interceptor-active-badge" class="badge badge-success">Active</span>
+        </div>
+        <div class="status-grid">
+          <div class="status-item">
+            <div class="status-label">Provider:</div>
+            <div id="dbg-provider" class="status-value">MetaMask / window.ethereum</div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Interceptor:</div>
+            <div id="dbg-interceptor" class="status-value">Proxy Wrapped (MAIN World)</div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Pending request:</div>
+            <div id="dbg-pending" class="status-value">None (0)</div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Analysis:</div>
+            <div id="dbg-analysis" class="status-value">IDLE</div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Forwarded:</div>
+            <div id="dbg-forwarded" class="status-value">0 calls</div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Rejected:</div>
+            <div id="dbg-rejected" class="status-value">0 rejections</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Interactive Acceptance Criteria Checklist & Simulation Tools -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Hackathon Acceptance Criteria Verification</span>
+        </div>
+        <div class="acceptance-grid">
+          <div class="acceptance-item">
+            <div class="acceptance-title">A. Claim Rewards Flow</div>
+            <div class="acceptance-desc">DApp ➔ Interceptor ➔ Backend Analysis ➔ Side Panel Risk Report ➔ Continue ➔ MetaMask.</div>
+          </div>
+          <div class="acceptance-item">
+            <div class="acceptance-title">B. Reject Behavior</div>
+            <div class="acceptance-desc">User clicks Reject in Side Panel ➔ DApp receives EIP-1193 Error 4001 ➔ MetaMask never opens.</div>
+          </div>
+          <div class="acceptance-item">
+            <div class="acceptance-title">C. Continue Behavior</div>
+            <div class="acceptance-desc">User clicks Continue ➔ Request forwarded once ➔ MetaMask opens exactly once.</div>
+          </div>
+          <div class="acceptance-item">
+            <div class="acceptance-title">D. Account Change Invalidation</div>
+            <div class="acceptance-desc">Switching account while report is pending immediately marks the report STALE.</div>
+          </div>
+          <div class="acceptance-item">
+            <div class="acceptance-title">E. Chain Change Invalidation</div>
+            <div class="acceptance-desc">Switching network chain while report is pending marks the report STALE.</div>
+          </div>
+          <div class="acceptance-item">
+            <div class="acceptance-title">F. Analysis Unavailable Safety</div>
+            <div class="acceptance-desc">When backend is down or times out, UI shows "Analysis unavailable" with no green indicators.</div>
+          </div>
+          <div class="acceptance-item">
+            <div class="acceptance-title">G. eth_call Passthrough</div>
+            <div class="acceptance-desc">Calling eth_call immediately delegates to provider without triggering interception.</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px; border-top: 1px solid #1e293b; padding-top: 14px;">
+          <div style="font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 8px;">
+            SIMULATION TOOLS (For Testing D, E & F without switching physical wallets)
+          </div>
+          <div class="simulation-bar">
+            <button id="sim-account-change" class="btn btn-secondary">
+              👤 Simulate accountsChanged (Test D)
+            </button>
+            <button id="sim-chain-change" class="btn btn-secondary">
+              🌐 Simulate chainChanged (Test E)
+            </button>
+            <button id="sim-toggle-mock" class="btn btn-secondary">
+              ⚙️ Toggle In-Page Mock Provider
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DApp Logic Script -->
+    <script type="module" src="./dapp.ts"></script>
+  </body>
+</html>

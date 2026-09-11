@@ -1,0 +1,13 @@
+{
+  "chainId": 11155111,
+  "chainName": "Ethereum Sepolia Testnet",
+  "rpcUrl": "https://rpc.sepolia.org",
+  "attacker": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  "contracts": {
+    "testToken": "0x0000000000000000000000000000000000000000",
+    "testNFT": "0x0000000000000000000000000000000000000000",
+    "testERC1155": "0x0000000000000000000000000000000000000000",
+    "fakeRewardsDrainer": "0x0000000000000000000000000000000000000000"
+  },
+  "deploymentCommand": "forge script script/DeployAll.s.sol:DeployAll --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY --broadcast --verify"
+}

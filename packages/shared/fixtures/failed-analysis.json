@@ -1,0 +1,73 @@
+{
+  "request": {
+    "requestId": "fixture-failed",
+    "origin": "https://claim-rewards.example",
+    "chainId": 424242,
+    "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "method": "eth_sendTransaction",
+    "params": [
+      {
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+        "data": "0x"
+      }
+    ]
+  },
+  "report": {
+    "requestId": "fixture-failed",
+    "requestHash": "0xa65e4b57cc167cda7a263abfd965be8c6a059e891dff809ffe5c6cd5fdf0a490",
+    "status": "failed",
+    "severity": "unknown",
+    "summary": "ANALYSIS UNAVAILABLE — chain 424242 is not configured for simulation; supported: Local demo chain (31337)",
+    "fork": null,
+    "simulation": {
+      "mode": "unsupported",
+      "outcome": "not-executed",
+      "assumptions": [],
+      "error": "chain 424242 is not configured for simulation; supported: Local demo chain (31337)"
+    },
+    "intent": {
+      "kind": "transaction",
+      "known": true,
+      "summary": "Send native currency to 0x5FbD…0aa3",
+      "target": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "source": "none"
+    },
+    "findings": [
+      {
+        "id": "analysis.unavailable#0",
+        "ruleId": "analysis.unavailable",
+        "severity": "unknown",
+        "title": "Analysis unavailable",
+        "description": "The request could not be simulated (chain 424242 is not configured for simulation; supported: Local demo chain (31337)). Nothing about its effect is known — do not treat it as safe.",
+        "explanation": "The request could not be simulated (chain 424242 is not configured for simulation; supported: Local demo chain (31337)). Nothing about its effect is known — do not treat it as safe.",
+        "confidence": "high",
+        "evidenceType": "analysis-gap",
+        "evidence": [
+          {
+            "kind": "simulation",
+            "summary": "chain 424242 is not configured for simulation; supported: Local demo chain (31337)"
+          }
+        ]
+      }
+    ],
+    "immediateChanges": [],
+    "conditionalChanges": [],
+    "potentialExposure": [],
+    "assetFlows": [],
+    "tokens": [],
+    "coverage": {
+      "checked": [],
+      "missing": [
+        "chain 424242 is not configured for simulation; supported: Local demo chain (31337)"
+      ],
+      "complete": false
+    },
+    "analyzedAt": "2026-09-11T16:27:28.420Z",
+    "durationMs": 1,
+    "engine": {
+      "simulator": "simulator@0.1.0",
+      "riskEngine": "baseline@0.1.0"
+    }
+  }
+}

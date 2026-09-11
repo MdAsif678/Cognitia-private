@@ -1,0 +1,187 @@
+{
+  "request": {
+    "requestId": "fixture-claim-drain",
+    "origin": "https://claim-rewards.example",
+    "chainId": 31337,
+    "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "method": "eth_sendTransaction",
+    "params": [
+      {
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+        "data": "0x1e83409a0000000000000000000000005fbdb2315678afecb367f032d93f642f64180aa3"
+      }
+    ]
+  },
+  "report": {
+    "requestId": "fixture-claim-drain",
+    "requestHash": "0x37ea96ea49e757d3abd771b40cccc3372b1ff594f09bc51bcebfb31f8ed16704",
+    "status": "complete",
+    "severity": "high",
+    "summary": "HIGH RISK — Moves 500 TUSD out of your wallet",
+    "fork": {
+      "chainId": 31337,
+      "blockNumber": "12",
+      "blockHash": "0x88a29e1bbfb228c173a40c44178e7e8e56804bcd38a8c4d2d573aa5ac95be8aa",
+      "blockTimestamp": "1789144044",
+      "verified": true
+    },
+    "simulation": {
+      "mode": "transaction",
+      "outcome": "success",
+      "assumptions": [
+        "Executed on a private Anvil fork of Local demo chain pinned to block #12 (0x88a29e1bbfb228c173a40c44178e7e8e56804bcd38a8c4d2d573aa5ac95be8aa); nothing was broadcast.",
+        "The sender was impersonated on the fork, so no signature was needed to execute the unsigned transaction.",
+        "Gas is priced at zero on the fork: native balance changes exclude the network fee, which is estimated separately.",
+        "Transactions that land before this one on the real chain could change the outcome.",
+        "Only assets referenced by the calldata, logs or execution trace were compared; the wallet's other holdings were not enumerated."
+      ],
+      "gas": {
+        "used": "57571",
+        "estimatedFeeWei": "71200820892701",
+        "effectiveGasPrice": "1236748031",
+        "balanceCoversFee": true
+      }
+    },
+    "intent": {
+      "kind": "transaction",
+      "known": false,
+      "summary": "Unrecognised function 0x1e83409a on 0xCf7E…0Fc9 — effects taken from simulation only",
+      "target": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "selector": "0x1e83409a",
+      "source": "none",
+      "rawCalldata": "0x1e83409a0000000000000000000000005fbdb2315678afecb367f032d93f642f64180aa3"
+    },
+    "findings": [
+      {
+        "id": "transfer.hidden-outflow#0",
+        "ruleId": "transfer.hidden-outflow",
+        "severity": "high",
+        "title": "Moves 500 TUSD out of your wallet",
+        "description": "The site presents this as an unrecognised function, but simulation shows 500 TUSD leaving your wallet to 0xA77a…BAd1 with nothing received in return. It spends an approval you granted earlier to 0xCf7E…0Fc9.",
+        "explanation": "The site presents this as an unrecognised function, but simulation shows 500 TUSD leaving your wallet to 0xA77a…BAd1 with nothing received in return. It spends an approval you granted earlier to 0xCf7E…0Fc9.",
+        "confidence": "high",
+        "evidenceType": "simulated-state",
+        "evidence": [
+          {
+            "kind": "state-change",
+            "summary": "500 TUSD leaves your wallet",
+            "data": {
+              "timing": "immediate",
+              "kind": "erc20-balance",
+              "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+              "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "before": "1000000000000000000000",
+              "after": "500000000000000000000",
+              "delta": "-500000000000000000000"
+            }
+          },
+          {
+            "kind": "calldata",
+            "summary": "Unrecognised function 0x1e83409a on 0xCf7E…0Fc9 — effects taken from simulation only"
+          }
+        ]
+      },
+      {
+        "id": "decode.unknown-function#1",
+        "ruleId": "decode.unknown-function",
+        "severity": "low",
+        "title": "Unrecognised function 0x1e83409a",
+        "description": "The function could not be decoded; the findings above come from simulating it on current chain state.",
+        "explanation": "The function could not be decoded; the findings above come from simulating it on current chain state.",
+        "confidence": "medium",
+        "evidenceType": "decoded-calldata",
+        "evidence": [
+          {
+            "kind": "calldata",
+            "summary": "Unrecognised function 0x1e83409a on 0xCf7E…0Fc9 — effects taken from simulation only"
+          }
+        ]
+      }
+    ],
+    "immediateChanges": [
+      {
+        "timing": "immediate",
+        "type": "erc20-allowance",
+        "asset": "TUSD",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "amount": "0 TUSD",
+        "spender": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+        "kind": "erc20-allowance",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "owner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "before": "500000000000000000000",
+        "after": "0",
+        "unlimitedBefore": false,
+        "unlimitedAfter": false
+      },
+      {
+        "timing": "immediate",
+        "type": "erc20-balance",
+        "asset": "TUSD",
+        "amount": "-500 TUSD",
+        "kind": "erc20-balance",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "before": "1000000000000000000000",
+        "after": "500000000000000000000",
+        "delta": "-500000000000000000000"
+      },
+      {
+        "timing": "immediate",
+        "type": "erc20-balance",
+        "asset": "TUSD",
+        "amount": "+500 TUSD",
+        "kind": "erc20-balance",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "account": "0xA77ac0000000000000000000000000000000BAd1",
+        "before": "0",
+        "after": "500000000000000000000",
+        "delta": "500000000000000000000"
+      }
+    ],
+    "conditionalChanges": [],
+    "potentialExposure": [],
+    "assetFlows": [
+      {
+        "timing": "immediate",
+        "standard": "erc20",
+        "token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "to": "0xA77ac0000000000000000000000000000000BAd1",
+        "amount": "500000000000000000000",
+        "source": "log",
+        "step": "request"
+      }
+    ],
+    "tokens": [
+      {
+        "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "standard": "erc20",
+        "name": "Test USD",
+        "symbol": "TUSD",
+        "decimals": 18,
+        "totalSupply": "1000000000000000000000"
+      }
+    ],
+    "coverage": {
+      "checked": [
+        "Local demo chain state at block #12 (fork block hash verified against upstream)",
+        "execution trace for \"request\" (4 call frames)",
+        "native balance of 0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "native balance of 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+        "TUSD (0x5FbD…0aa3) allowance 0x7099…79C8 → 0xCf7E…0Fc9",
+        "TUSD (0x5FbD…0aa3) balance of 0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "TUSD (0x5FbD…0aa3) balance of 0xA77ac0000000000000000000000000000000BAd1"
+      ],
+      "missing": [],
+      "complete": true
+    },
+    "analyzedAt": "2026-09-11T16:27:27.491Z",
+    "durationMs": 392,
+    "engine": {
+      "simulator": "simulator@0.1.0",
+      "riskEngine": "baseline@0.1.0"
+    }
+  }
+}

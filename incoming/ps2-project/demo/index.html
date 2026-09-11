@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PS2 Security Demo | Malicious Transaction Testbed</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="logo-badge">PS2</div>
+        <div>
+          <h1 style="font-size: 1.4rem;">AuraRewards · Pre-Execution Testbed</h1>
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">Simulate real-world Web3 drainers & test wallet interception</p>
+        </div>
+      </div>
+      <div class="wallet-section">
+        <button id="btn-switch-network" class="btn btn-secondary btn-sm">Switch to Anvil (31337)</button>
+        <button id="btn-connect" class="btn">Connect Wallet</button>
+      </div>
+    </header>
+
+    <!-- Network & Account Status Bar -->
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-label">Connected Wallet</span>
+        <span id="wallet-address" class="status-value" style="color: var(--accent-cyan);">Not Connected</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Network / Chain ID</span>
+        <span id="network-id" class="status-value">31337 (Anvil)</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Target Chain RPC</span>
+        <span class="status-value" style="font-size: 0.85rem;">http://127.0.0.1:8545</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Attacker Wallet</span>
+        <span class="status-value" style="color: var(--accent-red); font-size: 0.85rem;">0x7099...79C8</span>
+      </div>
+    </div>
+
+    <div class="network-notice">
+      <span>ℹ️ <strong>Testing with Atif's Extension:</strong> Ensure the wallet interceptor extension is loaded. Clicking any button below will trigger a real wallet request that should be halted and analyzed before MetaMask confirms.</span>
+      <button id="btn-faucet" class="btn btn-secondary btn-sm">💧 Request Faucet (1,000 pUSD)</button>
+    </div>
+
+    <!-- Section 1: Malicious Attack Scenarios -->
+    <h2 class="section-title">
+      🚨 Attack Scenarios
+      <span class="badge badge-danger">Triggers Interceptor & Simulator</span>
+    </h2>
+
+    <div class="grid">
+      <!-- Card 1: Unlimited ERC-20 Approval -->
+      <div class="card card-attack">
+        <div>
+          <div class="card-header">
+            <h3 class="card-title">🎁 Claim 500 pUSD Airdrop</h3>
+            <span class="badge badge-danger">HIGH RISK</span>
+          </div>
+          <p class="card-desc">
+            Phishing lure: Prompts user to "claim airdrop", but secretly initiates an <strong>unlimited ERC-20 approval</strong> to the attacker address.
+          </p>
+          <div class="card-meta">
+            Target: TestToken (pUSD)<br />
+            Function: <code>approve(attacker, 2^256 - 1)</code><br />
+            Calldata: <code>0x095ea7b3...ffffffff</code>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button id="btn-attack-1" class="btn btn-danger" style="width: 100%;">Claim 500 pUSD (Malicious Approval)</button>
+        </div>
+      </div>
+
+      <!-- Card 2: NFT setApprovalForAll -->
+      <div class="card card-attack">
+        <div>
+          <div class="card-header">
+            <h3 class="card-title">🖼️ Mint Cyber NFT</h3>
+            <span class="badge badge-danger">HIGH RISK</span>
+          </div>
+          <p class="card-desc">
+            Phishing lure: Poses as a free VIP NFT mint, but triggers <strong>setApprovalForAll</strong>, granting attacker full authority over user's NFT collection.
+          </p>
+          <div class="card-meta">
+            Target: TestNFT (pNFT)<br />
+            Function: <code>setApprovalForAll(attacker, true)</code><br />
+            Calldata: <code>0xa22cb465...00000001</code>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button id="btn-attack-2" class="btn btn-danger" style="width: 100%;">Mint VIP NFT (Operator Takeover)</button>
+        </div>
+      </div>
+
+      <!-- Card 3: Direct Drain claim() -->
+      <div class="card card-attack">
+        <div>
+          <div class="card-header">
+            <h3 class="card-title">⚡ Claim Staking Yield</h3>
+            <span class="badge badge-danger">CRITICAL RISK</span>
+          </div>
+          <p class="card-desc">
+            Misleading contract lure: Calls <code>claim()</code> on a malicious drainer contract that internally executes <code>transferFrom</code> to steal tokens.
+          </p>
+          <div class="card-meta">
+            Target: FakeRewardsDrainer<br />
+            Function: <code>claim()</code><br />
+            Calldata: <code>0x4e71d92d</code>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button id="btn-attack-3" class="btn btn-danger" style="width: 100%;">Claim Yield (Direct Drain)</button>
+        </div>
+      </div>
+
+      <!-- Card 4: ERC-2612 Permit Signature -->
+      <div class="card card-attack">
+        <div>
+          <div class="card-header">
+            <h3 class="card-title">📜 Gasless Voucher (Permit)</h3>
+            <span class="badge badge-danger">HIGH RISK</span>
+          </div>
+          <p class="card-desc">
+            Off-chain signature lure: Requests an EIP-712 typed signature for an ERC-2612 Permit, allowing gasless theft of all user tokens.
+          </p>
+          <div class="card-meta">
+            Method: <code>eth_signTypedData_v4</code><br />
+            Type: <code>Permit(owner, spender, value, ...)</code><br />
+            Effect: Off-chain authorization of MaxUint256
+          </div>
+        </div>
+        <div class="card-actions">
+          <button id="btn-attack-4" class="btn btn-danger" style="width: 100%;">Sign Gasless Voucher (Permit2/ERC-2612)</button>
+        </div>
+      </div>
+
+      <!-- Card 5: ERC-1155 Operator Approval -->
+      <div class="card card-attack">
+        <div>
+          <div class="card-header">
+            <h3 class="card-title">🎖️ Claim Event Badges</h3>
+            <span class="badge badge-warning">HIGH RISK</span>
+          </div>
+          <p class="card-desc">
+            Multi-token lure: Requests batch approval for all ERC-1155 items in user's inventory to the attacker address.
+          </p>
+          <div class="card-meta">
+            Target: TestERC1155<br />
+            Function: <code>setApprovalForAll(attacker, true)</code><br />
+            Calldata: <code>0xa22cb465...00000001</code>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button id="btn-attack-5" class="btn btn-danger" style="width: 100%;">Claim Badges (ERC-1155 Approval)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Benign Actions -->
+    <h2 class="section-title">
+      🛡️ Benign & Recovery Actions
+      <span class="badge badge-success">Safe / Low Risk</span>
+    </h2>
+
+    <div class="grid">
+      <!-- Card 6: Safe Transfer -->
+      <div class="card card-benign">
+        <div>
+          <div class="card-header">
+            <h3 class="card-title">🕊️ Standard Token Transfer</h3>
+            <span class="badge badge-success">LOW RISK</span>
+          </div>
+          <p class="card-desc">
+            Benign test case: Standard transfer of 10 pUSD to a known peer. Interceptor should classify this as low risk and allow forwarding.
+          </p>
+          <div class="card-meta">
+            Target: TestToken<br />
+            Function: <code>transfer(recipient, 10 * 10^18)</code><br />
+            Calldata: <code>0xa9059cbb...</code>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button id="btn-benign-1" class="btn btn-success" style="width: 100%;">Send 10 pUSD (Safe Transfer)</button>
+        </div>
+      </div>
+
+      <!-- Card 7: Revoke Approval -->
+      <div class="card card-benign">
+        <div>
+          <div class="card-header">
+            <h3 class="card-title">🔒 Revoke Token Approval</h3>
+            <span class="badge badge-success">LOW RISK</span>
+          </div>
+          <p class="card-desc">
+            Security remediation: Sets the attacker's spending allowance back to zero. Should be identified as an approval revocation.
+          </p>
+          <div class="card-meta">
+            Target: TestToken<br />
+            Function: <code>approve(attacker, 0)</code><br />
+            Calldata: <code>0x095ea7b3...00000000</code>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button id="btn-benign-2" class="btn btn-secondary" style="width: 100%;">Revoke Allowance (Set to 0)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Transaction Inspector & Debugger -->
+    <div class="inspector-panel">
+      <div class="inspector-header">
+        <h3 style="font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+          🔍 Real-Time Transaction Inspector
+          <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: normal;">(Intercepted payload logger)</span>
+        </h3>
+        <button onclick="document.getElementById('inspector-output').textContent = '// Console cleared\n';" class="btn btn-secondary btn-sm">Clear</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+        When you click any button above, the exact JSON-RPC payload sent to <code>window.ethereum.request</code> is mirrored here for inspection.
+      </p>
+      <pre id="inspector-output">// Waiting for user action...
+// Connect wallet and click any attack or benign button to inspect the outgoing transaction payload.</pre>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

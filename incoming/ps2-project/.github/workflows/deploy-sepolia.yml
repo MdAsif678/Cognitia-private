@@ -1,0 +1,53 @@
+name: Deploy Contracts to Sepolia
+
+on:
+  workflow_dispatch:
+    inputs:
+      rpc_url:
+        description: "Sepolia RPC URL"
+        required: false
+        default: "https://rpc.sepolia.org"
+      verify:
+        description: "Verify contracts on Etherscan"
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    name: Deploy to Sepolia
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Deploy Contracts
+        env:
+          RPC_URL: ${{ inputs.rpc_url }}
+          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+        run: |
+          if [ -z "$PRIVATE_KEY" ]; then
+            echo "Error: DEPLOYER_PRIVATE_KEY secret is required"
+            exit 1
+          fi
+          
+          VERIFY_FLAG=""
+          if [ "${{ inputs.verify }}" = "true" ] && [ -n "$ETHERSCAN_API_KEY" ]; then
+            VERIFY_FLAG="--verify --etherscan-api-key $ETHERSCAN_API_KEY"
+          fi
+
+          forge script script/DeployAll.s.sol:DeployAll \
+            --rpc-url "$RPC_URL" \
+            --private-key "$PRIVATE_KEY" \
+            --broadcast \
+            $VERIFY_FLAG -vvv
+
+      - name: Upload Broadcast Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sepolia-broadcast
+          path: broadcast/DeployAll.s.sol/11155111/

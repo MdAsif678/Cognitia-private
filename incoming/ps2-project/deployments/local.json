@@ -1,0 +1,19 @@
+{
+  "chainId": 31337,
+  "chainName": "Anvil Local",
+  "rpcUrl": "http://127.0.0.1:8545",
+  "lanRpcUrl": "http://192.168.20.30:8545",
+  "testWallet": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "attacker": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  "contracts": {
+    "testToken": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+    "testNFT": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+    "testERC1155": "0x610178dA27b57F07436511646776037102646552",
+    "fakeRewardsDrainer": "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968",
+    "maliciousApprover": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+  },
+  "testToken": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+  "testNFT": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+  "testERC1155": "0x610178dA27b57F07436511646776037102646552",
+  "fakeRewardsDrainer": "0xB7A5bd0345EF1Cc5E66bf61BdeC17D2461fBd968"
+}

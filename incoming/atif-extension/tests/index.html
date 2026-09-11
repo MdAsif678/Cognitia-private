@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interceptor, Bridge & Analyzer Verification Suite</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0b0f19;
+        color: #f1f5f9;
+        padding: 30px 20px;
+        max-width: 860px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 24px;
+        color: #f8fafc;
+        margin-bottom: 8px;
+      }
+      p.subtitle {
+        color: #94a3b8;
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+      .section-heading {
+        font-size: 16px;
+        font-weight: 600;
+        color: #818cf8;
+        margin: 24px 0 12px 0;
+        border-bottom: 1px solid #1e293b;
+        padding-bottom: 6px;
+      }
+      .test-card {
+        background: #131b2e;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .test-name {
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .status {
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .passed {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+        border: 1px solid #22c55e;
+      }
+      .failed {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        border: 1px solid #ef4444;
+      }
+      .summary-banner {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 28px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Interceptor, Bridge & Analyzer Verification Suite</h1>
+    <p class="subtitle">Validating Interceptor Layer, Content Script Bridge, and Analysis Client</p>
+
+    <div id="test-container">Running test suite...</div>
+    <div id="summary-banner" class="summary-banner" style="display:none;"></div>
+
+    <script type="module">
+      import { runAllTests } from './interceptor.test.ts';
+      import { runBridgeTests } from './bridge.test.ts';
+      import { runAnalyzerTests } from './analyzer.test.ts';
+
+      async function execute() {
+        const container = document.getElementById('test-container');
+        const banner = document.getElementById('summary-banner');
+        container.innerHTML = '';
+
+        try {
+          // 1. Run Interceptor Tests
+          const heading1 = document.createElement('div');
+          heading1.className = 'section-heading';
+          heading1.textContent = 'Part 1: Page-Context Interceptor Tests (10 Tests)';
+          container.appendChild(heading1);
+
+          const interceptorResults = await runAllTests();
+          renderGroup(container, interceptorResults);
+
+          // 2. Run Bridge & Trust Boundary Tests
+          const heading2 = document.createElement('div');
+          heading2.className = 'section-heading';
+          heading2.textContent = 'Part 2: Content Script Bridge & Trust Boundary Tests (13 Tests)';
+          container.appendChild(heading2);
+
+          const bridgeResults = await runBridgeTests();
+          renderGroup(container, bridgeResults);
+
+          // 3. Run Analysis Client Tests
+          const heading3 = document.createElement('div');
+          heading3.className = 'section-heading';
+          heading3.textContent = 'Part 3: Analysis Client & /v1/analyze Tests (7 Tests)';
+          container.appendChild(heading3);
+
+          const analyzerResults = await runAnalyzerTests();
+          renderGroup(container, analyzerResults);
+
+          const totalResults = [...interceptorResults, ...bridgeResults, ...analyzerResults];
+          const allPassed = totalResults.every((r) => r.passed);
+          const passCount = totalResults.filter((r) => r.passed).length;
+
+          banner.style.display = 'block';
+          banner.style.borderColor = allPassed ? '#22c55e' : '#ef4444';
+          banner.style.color = allPassed ? '#22c55e' : '#ef4444';
+          banner.textContent = allPassed
+            ? `✓ All ${passCount}/${totalResults.length} Tests Passed Successfully! (Interceptor + Bridge + Analyzer)`
+            : `✕ ${totalResults.length - passCount} test(s) failed. Please check details above.`;
+        } catch (err) {
+          container.innerHTML = `<div style="color:#ef4444">Fatal test runner error: ${err.message}</div>`;
+        }
+      }
+
+      function renderGroup(container, results) {
+        results.forEach((res) => {
+          const card = document.createElement('div');
+          card.className = 'test-card';
+          card.innerHTML = `
+            <span class="test-name">${res.name}</span>
+            <span class="status ${res.passed ? 'passed' : 'failed'}">
+              ${res.passed ? 'PASS' : 'FAIL'}
+            </span>
+          `;
+          if (res.error) {
+            const errDiv = document.createElement('div');
+            errDiv.style.color = '#ef4444';
+            errDiv.style.fontSize = '12px';
+            errDiv.style.marginTop = '4px';
+            errDiv.textContent = res.error;
+            card.appendChild(errDiv);
+          }
+          container.appendChild(card);
+        });
+      }
+
+      execute();
+    </script>
+  </body>
+</html>
