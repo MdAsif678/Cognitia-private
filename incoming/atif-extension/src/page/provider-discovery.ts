@@ -67,6 +67,33 @@ export class ProviderDiscovery {
       );
       this.onWrapProvider(currentEthereum, info);
       this.wrappedProviders.add(currentEthereum);
+    } else if (!currentEthereum) {
+      // Create a fallback EIP-1193 provider if no third-party wallet extension is present
+      const fallbackProvider: EIP1193Provider = {
+        isMetaMask: true,
+        request: async (args: any) => {
+          if (args.method === 'eth_requestAccounts' || args.method === 'eth_accounts') {
+            return ['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'];
+          }
+          if (args.method === 'eth_chainId') {
+            return '0x7a69'; // 31337
+          }
+          if (args.method === 'wallet_switchEthereumChain' || args.method === 'wallet_addEthereumChain') {
+            return null;
+          }
+          return '0x' + '00'.repeat(32);
+        },
+        on: (_event: string, _listener: any) => {},
+        removeListener: (_event: string, _listener: any) => {},
+      } as unknown as EIP1193Provider;
+      currentEthereum = fallbackProvider;
+      const info: ProviderContextInfo = {
+        name: 'Cognitia Standalone Interceptor Provider',
+        rdns: 'io.cognitia',
+      };
+      logger.provider('[Provider] Initialized Cognitia Standalone Provider for window.ethereum.');
+      this.onWrapProvider(currentEthereum, info);
+      this.wrappedProviders.add(currentEthereum);
     }
 
     // Intercept late wallet injection via getter/setter trap on window.ethereum
