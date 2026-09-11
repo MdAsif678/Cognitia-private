@@ -284,9 +284,18 @@ class BackgroundCoordinator {
    * User approved: Forward the request to the original wallet provider.
    */
   private async handleUserContinue(requestId: string): Promise<void> {
+    // Re-hydrate in case the MV3 worker was restarted between analysis and the user's click.
+    await this.pendingManager.hydrateFromSessionStorage();
     const snapshot = await this.pendingManager.beginForwarding(requestId);
     if (!snapshot) {
       console.warn('[ServiceWorker] Forwarding rejected: invalid state or duplicate action.');
+      // Tell the side panel instead of leaving it on "Opening MetaMask..." forever.
+      this.broadcastStatus(
+        requestId,
+        'FAILED',
+        undefined,
+        'Could not forward to the wallet: request is no longer active (already handled, stale, or expired). Retry from the dapp.'
+      );
       return;
     }
 

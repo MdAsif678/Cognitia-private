@@ -110,8 +110,10 @@ export class PendingRequestManager {
     if (this.actionLock) return null;
     if (!this.matchesActive(requestId)) return null;
 
-    // Only allow forwarding if analysis is ready (or acknowledged stale/override in explicit flows)
-    if (this.activeRequest!.status !== 'ANALYSIS_READY') {
+    // Forward only from ANALYSIS_READY, or from ANALYSIS_UNAVAILABLE after the user's explicit
+    // acknowledgement in the side panel (state machine: ANALYSIS_UNAVAILABLE -> FORWARDING).
+    const st = this.activeRequest!.status;
+    if (st !== 'ANALYSIS_READY' && st !== 'ANALYSIS_UNAVAILABLE') {
       return null;
     }
 
