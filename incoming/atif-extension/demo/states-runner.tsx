@@ -55,14 +55,15 @@ const Gallery: React.FC = () => (
           style={{
             fontFamily: 'JetBrains Mono, monospace',
             fontSize: 11,
-            letterSpacing: '0.08em',
-            color: '#6e7380',
+            fontWeight: 500,
+            letterSpacing: '0.14em',
+            color: '#66655f',
             marginBottom: 8,
           }}
         >
           {state.name}
         </div>
-        <div className="app" style={{ height: 'auto', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, overflow: 'hidden' }}>
+        <div className="app demo-frame" style={{ height: 'auto' }}>
           <main className="view">{state.node}</main>
         </div>
       </div>

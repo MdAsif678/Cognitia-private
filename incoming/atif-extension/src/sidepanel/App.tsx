@@ -141,8 +141,8 @@ export const App: React.FC = () => {
             <Icon name="shield" size={16} />
           </span>
           <div>
-            <h1 className="brand-name">Pre-Execution Interceptor</h1>
-            <div className="brand-sub">Transaction &amp; Signature Simulator</div>
+            <h1 className="brand-name">Cognitia®</h1>
+            <div className="brand-sub">Interceptor</div>
           </div>
         </div>
         <div className="live" data-mode={isLive ? 'live' : 'preview'} role="status">

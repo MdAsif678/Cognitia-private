@@ -30,6 +30,10 @@ export interface SeverityMeta {
  * medium   -> MEDIUM RISK
  * low      -> LOW RISK
  * unknown  -> UNKNOWN RISK
+ *
+ * The label is emitted exactly as listed (tests assert the uppercase string).
+ * On screen the hero styles it as a display headline in sentence case
+ * ("High risk." / "Critical.") via CSS text-transform; the DOM text is unchanged.
  */
 export function mapSeverityLabel(severity: string | undefined): SeverityMeta {
   const s = (severity || 'unknown').toLowerCase();
@@ -136,6 +140,35 @@ export const RiskReport: React.FC<RiskReportProps> = ({
   const gaps = report.coverage.missing.length;
   const assumptions = report.simulation.assumptions;
 
+  const rejectButton = (
+    <button
+      key="reject"
+      type="button"
+      id="btn-reject"
+      className={preferReject ? 'btn btn-danger' : 'btn btn-ghost'}
+      onClick={handleRejectClick}
+      disabled={isProcessing}
+    >
+      <Icon name="x" size={15} />
+      {pending === 'reject' ? 'Rejecting' : 'Reject'}
+    </button>
+  );
+  const continueButton = (
+    <button
+      key="continue"
+      type="button"
+      id="btn-continue-metamask"
+      className={preferReject ? 'btn btn-ghost' : 'btn btn-primary'}
+      onClick={handleContinueClick}
+      disabled={isProcessing}
+    >
+      {pending === 'continue' ? 'Opening MetaMask' : 'Continue to MetaMask'}
+      <span className="btn-icon">
+        <Icon name="arrow" size={13} />
+      </span>
+    </button>
+  );
+
   return (
     <article className="report" id="risk-report-container" data-severity={sevMeta.tone}>
       {/* 1. Severity and plain-language summary */}
@@ -155,6 +188,7 @@ export const RiskReport: React.FC<RiskReportProps> = ({
         {summary.rest && <p className="hero-sub">{summary.rest}</p>}
         <p className="hero-origin">
           Requested by <span className="mono">{snapshot.origin}</span>
+          {snapshot.origin !== 'replay' && <span className="hero-flag">Intercepted</span>}
         </p>
       </header>
 
@@ -478,28 +512,8 @@ export const RiskReport: React.FC<RiskReportProps> = ({
       {/* 9. Reject / Continue. The request itself is never modified. */}
       <footer className="actions" id="section-actions">
         <div className="actions-row">
-          <button
-            type="button"
-            id="btn-reject"
-            className={preferReject ? 'btn btn-danger' : 'btn btn-ghost'}
-            onClick={handleRejectClick}
-            disabled={isProcessing}
-          >
-            <Icon name="x" size={15} />
-            {pending === 'reject' ? 'Rejecting' : 'Reject'}
-          </button>
-          <button
-            type="button"
-            id="btn-continue-metamask"
-            className={preferReject ? 'btn btn-ghost' : 'btn btn-primary'}
-            onClick={handleContinueClick}
-            disabled={isProcessing}
-          >
-            {pending === 'continue' ? 'Opening MetaMask' : 'Continue to MetaMask'}
-            <span className="btn-icon">
-              <Icon name="arrow" size={13} />
-            </span>
-          </button>
+          {/* The primary button is emitted first so DOM, tab and visual order agree. */}
+          {(preferReject ? [rejectButton, continueButton] : [continueButton, rejectButton])}
         </div>
         <p className="footnote">
           {preferReject ? 'Rejecting is the safe choice for this request. ' : ''}

@@ -64,7 +64,7 @@ export const VisualFixturesGallery: React.FC = () => {
       {/* Content Rendering */}
       {viewMode === 'single' ? (
         <main style={singleViewWrapperStyle}>
-          <div style={sidePanelMockFrameStyle}>
+          <div className="demo-frame" style={sidePanelMockFrameStyle}>
             <div style={frameHeaderStyle}>
               <span>CHROME EXTENSION SIDE PANEL</span>
               <span style={frameDotStyle}>●</span>
@@ -83,7 +83,7 @@ export const VisualFixturesGallery: React.FC = () => {
           {fixtureKeys.map((key) => {
             const fix = ALL_FIXTURES[key];
             return (
-              <div key={key} style={gridCardFrameStyle} id={`fixture-card-${key}`}>
+              <div key={key} className="demo-frame" id={`fixture-card-${key}`}>
                 <div style={gridCardHeaderStyle}>
                   <strong style={gridTitleStyle}>{fix.name}</strong>
                   <span style={gridBadgeStyle}>Severity: {fix.report.severity.toUpperCase()}</span>
@@ -107,9 +107,9 @@ export const VisualFixturesGallery: React.FC = () => {
 // Styles
 const pageStyle: React.CSSProperties = {
   minHeight: '100vh',
-  backgroundColor: '#070b14',
-  color: '#f1f5f9',
-  fontFamily: 'Outfit, -apple-system, BlinkMacSystemFont, sans-serif',
+  backgroundColor: '#f6f5f1',
+  color: '#111111',
+  fontFamily: 'Inter, -apple-system, "Segoe UI", sans-serif',
   padding: '24px',
 };
 
@@ -118,40 +118,43 @@ const headerStyle: React.CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   paddingBottom: '16px',
-  borderBottom: '1px solid #1e293b',
+  borderBottom: '1px solid #e6e4de',
   marginBottom: '20px',
   flexWrap: 'wrap',
   gap: '12px',
 };
 
 const titleStyle: React.CSSProperties = {
+  fontFamily: 'Inter Tight, Inter, sans-serif',
   fontSize: '20px',
   fontWeight: 800,
-  color: '#f8fafc',
-  letterSpacing: '-0.3px',
+  color: '#111111',
+  letterSpacing: '-0.02em',
 };
 
 const subtitleStyle: React.CSSProperties = {
   fontSize: '12px',
-  color: '#94a3b8',
+  color: '#66655f',
   marginTop: '4px',
 };
 
 const modeToggleGroupStyle: React.CSSProperties = {
   display: 'flex',
   gap: '8px',
-  background: '#0f172a',
+  background: '#f6f5f1',
   padding: '4px',
-  borderRadius: '8px',
-  border: '1px solid #1e293b',
+  borderRadius: '999px',
+  border: '1px solid #e6e4de',
 };
 
 const toggleBtnStyle: React.CSSProperties = {
-  background: 'transparent',
-  border: 'none',
-  color: '#94a3b8',
+  background: '#ffffff',
+  borderWidth: 1,
+  borderStyle: 'solid',
+  borderColor: '#e6e4de',
+  color: '#454541',
   padding: '6px 14px',
-  borderRadius: '6px',
+  borderRadius: '999px',
   fontSize: '12px',
   fontWeight: 600,
   cursor: 'pointer',
@@ -159,7 +162,8 @@ const toggleBtnStyle: React.CSSProperties = {
 
 const activeToggleBtnStyle: React.CSSProperties = {
   ...toggleBtnStyle,
-  background: '#4f46e5',
+  background: '#111111',
+  borderColor: '#111111',
   color: '#ffffff',
 };
 
@@ -171,11 +175,13 @@ const tabsContainerStyle: React.CSSProperties = {
 };
 
 const tabStyle: React.CSSProperties = {
-  background: '#131b2e',
-  border: '1px solid #1e293b',
-  color: '#94a3b8',
+  background: '#ffffff',
+  borderWidth: 1,
+  borderStyle: 'solid',
+  borderColor: '#e6e4de',
+  color: '#454541',
   padding: '8px 14px',
-  borderRadius: '8px',
+  borderRadius: '999px',
   fontSize: '12px',
   fontWeight: 600,
   cursor: 'pointer',
@@ -183,9 +189,9 @@ const tabStyle: React.CSSProperties = {
 
 const activeTabStyle: React.CSSProperties = {
   ...tabStyle,
-  background: 'rgba(99, 102, 241, 0.2)',
-  borderColor: '#6366f1',
-  color: '#818cf8',
+  background: '#111111',
+  borderColor: '#111111',
+  color: '#ffffff',
 };
 
 const singleViewWrapperStyle: React.CSSProperties = {
@@ -193,31 +199,28 @@ const singleViewWrapperStyle: React.CSSProperties = {
   justifyContent: 'center',
 };
 
+// Card chrome (surface, hairline, radius, shadow) comes from .demo-frame in the panel stylesheet.
 const sidePanelMockFrameStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '440px',
-  background: '#0b0f19',
-  border: '1px solid #334155',
-  borderRadius: '14px',
-  boxShadow: '0 12px 36px rgba(0, 0, 0, 0.5)',
-  overflow: 'hidden',
 };
 
 const frameHeaderStyle: React.CSSProperties = {
-  background: '#0f172a',
+  background: '#f6f5f1',
   padding: '10px 16px',
-  borderBottom: '1px solid #1e293b',
+  borderBottom: '1px solid #e6e4de',
+  fontFamily: 'JetBrains Mono, monospace',
   fontSize: '10px',
-  fontWeight: 800,
-  color: '#64748b',
+  fontWeight: 500,
+  color: '#66655f',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  letterSpacing: '0.8px',
+  letterSpacing: '0.14em',
 };
 
 const frameDotStyle: React.CSSProperties = {
-  color: '#22c55e',
+  color: '#0d7d56',
 };
 
 const gridWrapperStyle: React.CSSProperties = {
@@ -226,17 +229,10 @@ const gridWrapperStyle: React.CSSProperties = {
   gap: '20px',
 };
 
-const gridCardFrameStyle: React.CSSProperties = {
-  background: '#0b0f19',
-  border: '1px solid #1e293b',
-  borderRadius: '12px',
-  overflow: 'hidden',
-};
-
 const gridCardHeaderStyle: React.CSSProperties = {
-  background: '#0f172a',
+  background: '#f6f5f1',
   padding: '10px 14px',
-  borderBottom: '1px solid #1e293b',
+  borderBottom: '1px solid #e6e4de',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
@@ -244,16 +240,19 @@ const gridCardHeaderStyle: React.CSSProperties = {
 
 const gridTitleStyle: React.CSSProperties = {
   fontSize: '13px',
-  color: '#f8fafc',
+  color: '#111111',
 };
 
 const gridBadgeStyle: React.CSSProperties = {
+  fontFamily: 'JetBrains Mono, monospace',
   fontSize: '10px',
-  fontWeight: 700,
-  color: '#cbd5e1',
-  background: '#1e293b',
+  fontWeight: 500,
+  letterSpacing: '0.14em',
+  color: '#66655f',
+  background: '#ffffff',
+  border: '1px solid #e6e4de',
   padding: '2px 8px',
-  borderRadius: '4px',
+  borderRadius: '999px',
 };
 
 const rootEl = document.getElementById('root');

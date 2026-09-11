@@ -3,230 +3,323 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PS2 Security Demo | Malicious Transaction Testbed</title>
+  <meta name="color-scheme" content="light" />
+  <title>AuraRewards</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <header>
-      <div class="brand">
-        <div class="logo-badge">PS2</div>
-        <div>
-          <h1 style="font-size: 1.4rem;">AuraRewards · Pre-Execution Testbed</h1>
-          <p style="font-size: 0.85rem; color: var(--text-secondary);">Simulate real-world Web3 drainers & test wallet interception</p>
-        </div>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="wordmark" href="#top">AuraRewards<sup>®</sup> <span class="wordmark-sub">Member program</span></a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#offers">Offers</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#activity">Activity</a>
+      </nav>
+      <div class="nav-actions">
+        <button id="btn-switch-network" type="button" class="btn btn-ghost btn-sm">Switch to Anvil</button>
+        <button id="btn-connect" type="button" class="btn btn-primary btn-connect">Connect Wallet</button>
       </div>
-      <div class="wallet-section">
-        <button id="btn-switch-network" class="btn btn-secondary btn-sm">Switch to Anvil (31337)</button>
-        <button id="btn-connect" class="btn">Connect Wallet</button>
-      </div>
-    </header>
+    </div>
+  </header>
 
-    <!-- Network & Account Status Bar -->
-    <div class="status-bar">
-      <div class="status-item">
-        <span class="status-label">Connected Wallet</span>
-        <span id="wallet-address" class="status-value" style="color: var(--accent-cyan);">Not Connected</span>
+  <main id="top">
+
+    <!-- 01 · Featured offer -->
+    <section class="hero container" id="featured">
+      <p class="eyebrow rise-in"><span class="eyebrow-n">01</span> · Featured offer</p>
+      <h1 class="display display--hero rise-in">Claim your 500 <span class="nowrap">pUSD<span class="period period--green" aria-hidden="true"></span></span></h1>
+      <p class="lede rise-in">Early members are allocated 500 pUSD from the launch pool. Connect once, confirm once, and the balance is yours to hold, send or stake.</p>
+      <div class="btn-row rise-in">
+        <button id="btn-attack-1" type="button" class="btn btn-primary">Claim 500 pUSD<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button>
+        <a class="btn btn-ghost" href="#how-it-works">How it works</a>
       </div>
-      <div class="status-item">
-        <span class="status-label">Network / Chain ID</span>
-        <span id="network-id" class="status-value">31337 (Anvil)</span>
+      <p class="mono-strip rise-in">One confirmation · No lock-up · Members only</p>
+      <details class="hood rise-in">
+        <summary><span>Under the hood</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+        <dl class="hood-rows">
+          <dt>Target</dt><dd class="mono">TestToken (pUSD) 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6</dd>
+          <dt>Function</dt><dd class="mono">approve(spender, 2^256 - 1)</dd>
+          <dt>Calldata</dt><dd class="mono">0x095ea7b3...ffffffff</dd>
+          <dt>Expected verdict</dt><dd><span class="verdict" data-severity="high">HIGH</span></dd>
+        </dl>
+        <p class="hood-note">Nothing is minted. The call grants the operator wallet 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 an unlimited allowance over every pUSD you hold or will hold.</p>
+      </details>
+    </section>
+
+    <!-- 02 · Your account -->
+    <section class="section container rise" id="account">
+      <h2 class="eyebrow"><span class="eyebrow-n">02</span> · Your account</h2>
+      <dl class="hud">
+        <div class="hud-cell"><dt>Connected wallet</dt><dd id="wallet-address">Not Connected</dd></div>
+        <div class="hud-cell"><dt>Network · Chain ID</dt><dd id="network-id">31337 (Anvil)</dd></div>
+        <div class="hud-cell"><dt>RPC endpoint</dt><dd>http://127.0.0.1:8545</dd></div>
+        <div class="hud-cell"><dt>Operator wallet</dt><dd>0x7099...79C8</dd></div>
+      </dl>
+    </section>
+
+    <!-- 03 · How it works -->
+    <section class="section container rise" id="how-it-works">
+      <div class="section-h">
+        <p class="eyebrow"><span class="eyebrow-n">03</span> · How it works</p>
+        <h2 class="display">Earn without a <span class="nowrap">lock-up<span class="period period--ink" aria-hidden="true"></span></span></h2>
       </div>
-      <div class="status-item">
-        <span class="status-label">Target Chain RPC</span>
-        <span class="status-value" style="font-size: 0.85rem;">http://127.0.0.1:8545</span>
+      <ol class="how">
+        <li class="step">
+          <span class="step-n">01<span class="period period--green" aria-hidden="true"></span></span>
+          <h3 class="row-title">Connect.</h3>
+          <p>Your wallet is your membership. No account, no email, no waitlist.</p>
+        </li>
+        <li class="step">
+          <span class="step-n">02<span class="period period--green" aria-hidden="true"></span></span>
+          <h3 class="row-title">Accrue.</h3>
+          <p>Rewards build every epoch against the balance you hold.</p>
+        </li>
+        <li class="step">
+          <span class="step-n">03<span class="period period--green" aria-hidden="true"></span></span>
+          <h3 class="row-title">Claim.</h3>
+          <p>One confirmation moves what has accrued to your address.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- 04 · Offers -->
+    <section class="section container rise" id="offers">
+      <div class="section-h">
+        <p class="eyebrow"><span class="eyebrow-n">04</span> · Offers</p>
+        <h2 class="display">More ways to <span class="nowrap">earn<span class="period period--ink" aria-hidden="true"></span></span></h2>
       </div>
-      <div class="status-item">
-        <span class="status-label">Attacker Wallet</span>
-        <span class="status-value" style="color: var(--accent-red); font-size: 0.85rem;">0x7099...79C8</span>
+      <ul class="offers">
+
+        <li class="offer" data-mark="ink">
+          <span class="offer-dot" aria-hidden="true"></span>
+          <div class="offer-body">
+            <h3 class="row-title">Mint the Founders NFT.</h3>
+            <p class="offer-copy">A one-time allocation for early members, minted on confirmation.</p>
+            <details class="hood">
+              <summary><span>Under the hood</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+              <dl class="hood-rows">
+                <dt>Target</dt><dd class="mono">TestNFT (pNFT) 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318</dd>
+                <dt>Function</dt><dd class="mono">setApprovalForAll(operator, true)</dd>
+                <dt>Calldata</dt><dd class="mono">0xa22cb465...00000001</dd>
+                <dt>Expected verdict</dt><dd><span class="verdict" data-severity="high">HIGH</span></dd>
+              </dl>
+              <p class="hood-note">Nothing is minted. The call names the operator wallet as approved operator for every NFT you hold in this collection, now and later.</p>
+            </details>
+          </div>
+          <div class="offer-action"><button id="btn-attack-2" type="button" class="btn btn-primary">Mint Founders NFT<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+        </li>
+
+        <li class="offer" data-mark="amber">
+          <span class="offer-dot" aria-hidden="true"></span>
+          <div class="offer-body">
+            <h3 class="row-title">Claim staking yield.</h3>
+            <p class="offer-copy">Yield accrued against your pUSD balance since your last claim, paid in full on confirmation.</p>
+            <details class="hood">
+              <summary><span>Under the hood</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+              <dl class="hood-rows">
+                <dt>Target</dt><dd class="mono">FakeRewardsDrainer 0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e</dd>
+                <dt>Function</dt><dd class="mono">claim()</dd>
+                <dt>Calldata</dt><dd class="mono">0x4e71d92d</dd>
+                <dt>Expected verdict</dt><dd><span class="verdict" data-severity="critical">CRITICAL</span></dd>
+              </dl>
+              <p class="hood-note">Nothing is paid out. claim() calls transferFrom against the allowance granted by the featured offer and moves your pUSD to the operator wallet. The name is the lure.</p>
+            </details>
+          </div>
+          <div class="offer-action"><button id="btn-attack-3" type="button" class="btn btn-primary">Claim yield<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+        </li>
+
+        <li class="offer" data-mark="ink">
+          <span class="offer-dot" aria-hidden="true"></span>
+          <div class="offer-body">
+            <h3 class="row-title">Sign the gasless voucher.</h3>
+            <p class="offer-copy">Authorise your rewards with a single signature. No transaction, no gas.</p>
+            <details class="hood">
+              <summary><span>Under the hood</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+              <dl class="hood-rows">
+                <dt>Method</dt><dd class="mono">eth_signTypedData_v4</dd>
+                <dt>Type</dt><dd class="mono">Permit(owner, spender, value, nonce, deadline)</dd>
+                <dt>Message</dt><dd class="mono">spender 0x70997970C51812dc3A010C7d01b50e0d17dc79C8, value MaxUint256, deadline now + 1 hour</dd>
+                <dt>Expected verdict</dt><dd><span class="verdict" data-severity="high">HIGH</span></dd>
+              </dl>
+              <p class="hood-note">An off-chain ERC-2612 permit. Whoever holds the signature can pull your full pUSD balance later without another prompt.</p>
+            </details>
+          </div>
+          <div class="offer-action"><button id="btn-attack-4" type="button" class="btn btn-primary">Sign voucher<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+        </li>
+
+        <li class="offer" data-mark="amber">
+          <span class="offer-dot" aria-hidden="true"></span>
+          <div class="offer-body">
+            <h3 class="row-title">Claim event badges.</h3>
+            <p class="offer-copy">Badges from every event you attended, delivered as one batch.</p>
+            <details class="hood">
+              <summary><span>Under the hood</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+              <dl class="hood-rows">
+                <dt>Target</dt><dd class="mono">TestERC1155 0x610178dA211FEF7D417bC0e6FeD39F05609AD788</dd>
+                <dt>Function</dt><dd class="mono">setApprovalForAll(operator, true)</dd>
+                <dt>Calldata</dt><dd class="mono">0xa22cb465...00000001</dd>
+                <dt>Expected verdict</dt><dd><span class="verdict" data-severity="high">HIGH</span></dd>
+              </dl>
+              <p class="hood-note">Grants batch operator rights over every ERC-1155 item in your inventory.</p>
+            </details>
+          </div>
+          <div class="offer-action"><button id="btn-attack-5" type="button" class="btn btn-primary">Claim badges<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+        </li>
+
+      </ul>
+    </section>
+
+    <!-- 05 · Account tools -->
+    <section class="section container rise" id="tools">
+      <div class="section-h">
+        <p class="eyebrow"><span class="eyebrow-n">05</span> · Account tools</p>
+        <h2 class="display display--minor">Manage your <span class="nowrap">balance<span class="period period--ink" aria-hidden="true"></span></span></h2>
+      </div>
+      <ul class="offers">
+
+        <li class="offer" data-mark="green">
+          <span class="offer-dot" aria-hidden="true"></span>
+          <div class="offer-body">
+            <h3 class="row-title">Send 10 pUSD.</h3>
+            <p class="offer-copy">A standard transfer to another member address.</p>
+            <details class="hood">
+              <summary><span>Under the hood</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+              <dl class="hood-rows">
+                <dt>Target</dt><dd class="mono">TestToken (pUSD) 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6</dd>
+                <dt>Function</dt><dd class="mono">transfer(0x9965507D1a55bcC2695C58ba16FB37d819B0A4df, 10 * 10^18)</dd>
+                <dt>Calldata</dt><dd class="mono">0xa9059cbb...</dd>
+                <dt>Expected verdict</dt><dd><span class="verdict" data-severity="low">LOW</span></dd>
+              </dl>
+              <p class="hood-note">An ordinary ERC-20 transfer of 10 pUSD to a known address.</p>
+            </details>
+          </div>
+          <div class="offer-action"><button id="btn-benign-1" type="button" class="btn btn-ghost">Send 10 pUSD</button></div>
+        </li>
+
+        <li class="offer" data-mark="green">
+          <span class="offer-dot" aria-hidden="true"></span>
+          <div class="offer-body">
+            <h3 class="row-title">Revoke allowance.</h3>
+            <p class="offer-copy">Set the operator allowance on your pUSD back to zero.</p>
+            <details class="hood">
+              <summary><span>Under the hood</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+              <dl class="hood-rows">
+                <dt>Target</dt><dd class="mono">TestToken (pUSD) 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6</dd>
+                <dt>Function</dt><dd class="mono">approve(spender, 0)</dd>
+                <dt>Calldata</dt><dd class="mono">0x095ea7b3...00000000</dd>
+                <dt>Expected verdict</dt><dd><span class="verdict" data-severity="low">LOW</span></dd>
+              </dl>
+              <p class="hood-note">The cleanup step after any approval you regret. Sets the operator wallet's allowance to zero.</p>
+            </details>
+          </div>
+          <div class="offer-action"><button id="btn-benign-2" type="button" class="btn btn-ghost">Revoke allowance</button></div>
+        </li>
+
+        <li class="offer" data-mark="green">
+          <span class="offer-dot" aria-hidden="true"></span>
+          <div class="offer-body">
+            <h3 class="row-title">Add 1,000 pUSD.</h3>
+            <p class="offer-copy">Top up from the program pool while the season is open. Connect a wallet first.</p>
+            <details class="hood">
+              <summary><span>Under the hood</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+              <dl class="hood-rows">
+                <dt>Target</dt><dd class="mono">TestToken (pUSD) 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6</dd>
+                <dt>Function</dt><dd class="mono">mint(you, 1000 * 10^18)</dd>
+                <dt>Calldata</dt><dd class="mono">0x40c10f19...</dd>
+                <dt>Role</dt><dd>Setup step</dd>
+              </dl>
+              <p class="hood-note">Mints test pUSD to the connected wallet so the offers above have a balance to act on. Not one of the seven demo scenarios.</p>
+            </details>
+          </div>
+          <div class="offer-action"><button id="btn-faucet" type="button" class="btn btn-ghost">Add 1,000 pUSD</button></div>
+        </li>
+
+      </ul>
+    </section>
+
+    <!-- Marquee -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <div class="marquee-group">
+          <span class="marquee-item">No lock-up</span><span class="star">*</span>
+          <span class="marquee-item">Claim any time</span><span class="star">*</span>
+          <span class="marquee-item">One confirmation</span><span class="star">*</span>
+          <span class="marquee-item">Members only</span><span class="star">*</span>
+          <span class="marquee-item">Rewards every epoch</span><span class="star">*</span>
+        </div>
+        <div class="marquee-group" aria-hidden="true">
+          <span class="marquee-item">No lock-up</span><span class="star">*</span>
+          <span class="marquee-item">Claim any time</span><span class="star">*</span>
+          <span class="marquee-item">One confirmation</span><span class="star">*</span>
+          <span class="marquee-item">Members only</span><span class="star">*</span>
+          <span class="marquee-item">Rewards every epoch</span><span class="star">*</span>
+        </div>
       </div>
     </div>
 
-    <div class="network-notice">
-      <span>ℹ️ <strong>Testing with Atif's Extension:</strong> Ensure the wallet interceptor extension is loaded. Clicking any button below will trigger a real wallet request that should be halted and analyzed before MetaMask confirms.</span>
-      <button id="btn-faucet" class="btn btn-secondary btn-sm">💧 Request Faucet (1,000 pUSD)</button>
+    <!-- 06 · Activity -->
+    <section class="section container rise" id="activity">
+      <div class="section-h">
+        <p class="eyebrow"><span class="eyebrow-n">06</span> · Activity</p>
+        <h2 class="display display--minor">Every request, <span class="nowrap">mirrored<span class="period period--ink" aria-hidden="true"></span></span></h2>
+      </div>
+      <p class="section-copy">Each button sends a JSON-RPC payload through window.ethereum.request. The exact object is written here before the wallet or the interceptor sees it.</p>
+      <div class="card">
+        <div class="card-h">
+          <span class="lights" aria-hidden="true"><i class="light light--red"></i><i class="light light--amber"></i><i class="light light--green"></i></span>
+          <span class="card-label" id="request-log-label">Request log</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('inspector-output').textContent = '// Console cleared\n';">Clear</button>
+        </div>
+        <div class="card-body">
+<pre id="inspector-output" role="log" aria-live="polite" aria-labelledby="request-log-label">// Waiting for user action...
+// Connect a wallet, then press any offer to inspect the outgoing payload.</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Closing -->
+    <section class="closing container rise">
+      <h2 class="display display--closing">Claim before the epoch <span class="nowrap">closes<span class="period period--red" aria-hidden="true"></span></span></h2>
+      <a class="btn btn-primary" href="#featured">Back to the offer<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></a>
+      <p class="mono-strip">Free · No account · One confirmation</p>
+    </section>
+
+  </main>
+
+  <footer class="footer container" id="testbed">
+    <div class="footer-top">
+      <div>
+        <p class="wordmark">AuraRewards<sup>®</sup> <span class="wordmark-sub">Member program</span></p>
+        <p class="tagline">Rewards for members who hold.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="#offers">Offers</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#activity">Activity</a>
+      </nav>
     </div>
 
-    <!-- Section 1: Malicious Attack Scenarios -->
-    <h2 class="section-title">
-      🚨 Attack Scenarios
-      <span class="badge badge-danger">Triggers Interceptor & Simulator</span>
-    </h2>
+    <p class="notice"><strong>Testbed notice.</strong> AuraRewards is not a real product. This page is the bait half of a Cognitia Interceptor demonstration: every offer above issues a drainer-pattern wallet request against a local Anvil chain (id 31337) using throwaway accounts. The operator wallet 0x7099...79C8 is the attacker. Load the interceptor extension first, never connect a wallet that holds real funds, and never use this page on a public network.</p>
 
-    <div class="grid">
-      <!-- Card 1: Unlimited ERC-20 Approval -->
-      <div class="card card-attack">
-        <div>
-          <div class="card-header">
-            <h3 class="card-title">🎁 Claim 500 pUSD Airdrop</h3>
-            <span class="badge badge-danger">HIGH RISK</span>
-          </div>
-          <p class="card-desc">
-            Phishing lure: Prompts user to "claim airdrop", but secretly initiates an <strong>unlimited ERC-20 approval</strong> to the attacker address.
-          </p>
-          <div class="card-meta">
-            Target: TestToken (pUSD)<br />
-            Function: <code>approve(attacker, 2^256 - 1)</code><br />
-            Calldata: <code>0x095ea7b3...ffffffff</code>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button id="btn-attack-1" class="btn btn-danger" style="width: 100%;">Claim 500 pUSD (Malicious Approval)</button>
-        </div>
-      </div>
+    <details class="hood hood--footer">
+      <summary><span>What each offer really does</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+      <ol class="truth">
+        <li><p><strong>Claim your 500 pUSD.</strong> approve(attacker, MaxUint256) on pUSD: an unlimited ERC-20 allowance to the attacker.</p><span class="verdict" data-severity="high">HIGH</span></li>
+        <li><p><strong>Mint the Founders NFT.</strong> setApprovalForAll(attacker, true) on pNFT: operator rights over the whole collection.</p><span class="verdict" data-severity="high">HIGH</span></li>
+        <li><p><strong>Claim staking yield.</strong> claim() on FakeRewardsDrainer, which calls transferFrom against the stale pUSD allowance.</p><span class="verdict" data-severity="critical">CRITICAL</span></li>
+        <li><p><strong>Sign the gasless voucher.</strong> ERC-2612 permit for MaxUint256 to the attacker, signed off-chain.</p><span class="verdict" data-severity="high">HIGH</span></li>
+        <li><p><strong>Claim event badges.</strong> setApprovalForAll(attacker, true) on the ERC-1155 contract: batch operator approval.</p><span class="verdict" data-severity="high">HIGH</span></li>
+        <li><p><strong>Send 10 pUSD.</strong> Ordinary transfer to 0x9965...A4df.</p><span class="verdict" data-severity="low">LOW</span></li>
+        <li><p><strong>Revoke allowance.</strong> approve(attacker, 0) on pUSD.</p><span class="verdict" data-severity="low">LOW</span></li>
+      </ol>
+    </details>
 
-      <!-- Card 2: NFT setApprovalForAll -->
-      <div class="card card-attack">
-        <div>
-          <div class="card-header">
-            <h3 class="card-title">🖼️ Mint Cyber NFT</h3>
-            <span class="badge badge-danger">HIGH RISK</span>
-          </div>
-          <p class="card-desc">
-            Phishing lure: Poses as a free VIP NFT mint, but triggers <strong>setApprovalForAll</strong>, granting attacker full authority over user's NFT collection.
-          </p>
-          <div class="card-meta">
-            Target: TestNFT (pNFT)<br />
-            Function: <code>setApprovalForAll(attacker, true)</code><br />
-            Calldata: <code>0xa22cb465...00000001</code>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button id="btn-attack-2" class="btn btn-danger" style="width: 100%;">Mint VIP NFT (Operator Takeover)</button>
-        </div>
-      </div>
-
-      <!-- Card 3: Direct Drain claim() -->
-      <div class="card card-attack">
-        <div>
-          <div class="card-header">
-            <h3 class="card-title">⚡ Claim Staking Yield</h3>
-            <span class="badge badge-danger">CRITICAL RISK</span>
-          </div>
-          <p class="card-desc">
-            Misleading contract lure: Calls <code>claim()</code> on a malicious drainer contract that internally executes <code>transferFrom</code> to steal tokens.
-          </p>
-          <div class="card-meta">
-            Target: FakeRewardsDrainer<br />
-            Function: <code>claim()</code><br />
-            Calldata: <code>0x4e71d92d</code>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button id="btn-attack-3" class="btn btn-danger" style="width: 100%;">Claim Yield (Direct Drain)</button>
-        </div>
-      </div>
-
-      <!-- Card 4: ERC-2612 Permit Signature -->
-      <div class="card card-attack">
-        <div>
-          <div class="card-header">
-            <h3 class="card-title">📜 Gasless Voucher (Permit)</h3>
-            <span class="badge badge-danger">HIGH RISK</span>
-          </div>
-          <p class="card-desc">
-            Off-chain signature lure: Requests an EIP-712 typed signature for an ERC-2612 Permit, allowing gasless theft of all user tokens.
-          </p>
-          <div class="card-meta">
-            Method: <code>eth_signTypedData_v4</code><br />
-            Type: <code>Permit(owner, spender, value, ...)</code><br />
-            Effect: Off-chain authorization of MaxUint256
-          </div>
-        </div>
-        <div class="card-actions">
-          <button id="btn-attack-4" class="btn btn-danger" style="width: 100%;">Sign Gasless Voucher (Permit2/ERC-2612)</button>
-        </div>
-      </div>
-
-      <!-- Card 5: ERC-1155 Operator Approval -->
-      <div class="card card-attack">
-        <div>
-          <div class="card-header">
-            <h3 class="card-title">🎖️ Claim Event Badges</h3>
-            <span class="badge badge-warning">HIGH RISK</span>
-          </div>
-          <p class="card-desc">
-            Multi-token lure: Requests batch approval for all ERC-1155 items in user's inventory to the attacker address.
-          </p>
-          <div class="card-meta">
-            Target: TestERC1155<br />
-            Function: <code>setApprovalForAll(attacker, true)</code><br />
-            Calldata: <code>0xa22cb465...00000001</code>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button id="btn-attack-5" class="btn btn-danger" style="width: 100%;">Claim Badges (ERC-1155 Approval)</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 2: Benign Actions -->
-    <h2 class="section-title">
-      🛡️ Benign & Recovery Actions
-      <span class="badge badge-success">Safe / Low Risk</span>
-    </h2>
-
-    <div class="grid">
-      <!-- Card 6: Safe Transfer -->
-      <div class="card card-benign">
-        <div>
-          <div class="card-header">
-            <h3 class="card-title">🕊️ Standard Token Transfer</h3>
-            <span class="badge badge-success">LOW RISK</span>
-          </div>
-          <p class="card-desc">
-            Benign test case: Standard transfer of 10 pUSD to a known peer. Interceptor should classify this as low risk and allow forwarding.
-          </p>
-          <div class="card-meta">
-            Target: TestToken<br />
-            Function: <code>transfer(recipient, 10 * 10^18)</code><br />
-            Calldata: <code>0xa9059cbb...</code>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button id="btn-benign-1" class="btn btn-success" style="width: 100%;">Send 10 pUSD (Safe Transfer)</button>
-        </div>
-      </div>
-
-      <!-- Card 7: Revoke Approval -->
-      <div class="card card-benign">
-        <div>
-          <div class="card-header">
-            <h3 class="card-title">🔒 Revoke Token Approval</h3>
-            <span class="badge badge-success">LOW RISK</span>
-          </div>
-          <p class="card-desc">
-            Security remediation: Sets the attacker's spending allowance back to zero. Should be identified as an approval revocation.
-          </p>
-          <div class="card-meta">
-            Target: TestToken<br />
-            Function: <code>approve(attacker, 0)</code><br />
-            Calldata: <code>0x095ea7b3...00000000</code>
-          </div>
-        </div>
-        <div class="card-actions">
-          <button id="btn-benign-2" class="btn btn-secondary" style="width: 100%;">Revoke Allowance (Set to 0)</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Live Transaction Inspector & Debugger -->
-    <div class="inspector-panel">
-      <div class="inspector-header">
-        <h3 style="font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-          🔍 Real-Time Transaction Inspector
-          <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: normal;">(Intercepted payload logger)</span>
-        </h3>
-        <button onclick="document.getElementById('inspector-output').textContent = '// Console cleared\n';" class="btn btn-secondary btn-sm">Clear</button>
-      </div>
-      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
-        When you click any button above, the exact JSON-RPC payload sent to <code>window.ethereum.request</code> is mirrored here for inspection.
-      </p>
-      <pre id="inspector-output">// Waiting for user action...
-// Connect wallet and click any attack or benign button to inspect the outgoing transaction payload.</pre>
-    </div>
-  </div>
+    <p class="smallprint">© 2026 AuraRewards testbed · Anvil chain 31337 only · Never use with a real wallet</p>
+  </footer>
 
   <script src="app.js"></script>
 </body>

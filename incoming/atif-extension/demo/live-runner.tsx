@@ -104,9 +104,9 @@ const App: React.FC = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <header style={{ borderBottom: '1px solid #1e293b', paddingBottom: 14, marginBottom: 18 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800 }}>Live risk reports — Syed's demo buttons → analysis backend → Atif's side panel</h1>
-        <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
+      <header style={{ borderBottom: '1px solid #e6e4de', paddingBottom: 14, marginBottom: 18 }}>
+        <h1 style={{ fontFamily: 'Inter Tight, Inter, sans-serif', fontSize: 20, fontWeight: 800, color: '#111111', letterSpacing: '-0.02em' }}>Live risk reports. Demo buttons, analysis backend, side panel</h1>
+        <p style={{ fontSize: 12, color: '#66655f', marginTop: 4 }}>
           Backend <code>{API}</code> · chain 31337 · wallet {WALLET.slice(0, 8)}… · each tab sends the exact calldata the demo site sends to the wallet.
         </p>
       </header>
@@ -115,28 +115,28 @@ const App: React.FC = () => {
           const st = states[b.id];
           const sev = st?.status === 'ready' ? st.report.severity.toUpperCase() : st?.status === 'loading' ? '…' : st?.status === 'error' ? 'ERR' : '';
           return (
-            <button key={b.id} id={`tab-${b.id}`} onClick={() => setSelected(b.id)} style={{ background: b.id === selected ? 'rgba(99,102,241,0.2)' : '#131b2e', border: `1px solid ${b.id === selected ? '#6366f1' : '#1e293b'}`, color: b.id === selected ? '#818cf8' : '#94a3b8', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-              {b.name} {sev && <span style={{ marginLeft: 6, color: sev === b.expected ? '#4ade80' : '#f87171' }}>{sev}</span>}
+            <button key={b.id} id={`tab-${b.id}`} onClick={() => setSelected(b.id)} style={{ background: b.id === selected ? '#111111' : '#ffffff', border: `1px solid ${b.id === selected ? '#111111' : '#e6e4de'}`, color: b.id === selected ? '#ffffff' : '#454541', padding: '8px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              {b.name} {sev && <span style={{ marginLeft: 6, color: sev === b.expected ? '#0d7d56' : '#c22f1c' }}>{sev}</span>}
             </button>
           );
         })}
       </nav>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, color: '#818cf8', fontWeight: 700 }}>OR REPLAY ANY REAL TRANSACTION:</span>
-        <select value={replayChain} onChange={(e) => setReplayChain(Number(e.target.value))} style={{ background: '#131b2e', color: '#cbd5e1', border: '1px solid #334155', borderRadius: 6, padding: '6px 8px', fontSize: 12 }}>
+        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.14em', color: '#111111', fontWeight: 500 }}>OR REPLAY ANY REAL TRANSACTION:</span>
+        <select value={replayChain} onChange={(e) => setReplayChain(Number(e.target.value))} style={{ background: '#ffffff', color: '#111111', border: '1px solid #c9c7c0', borderRadius: 8, padding: '6px 8px', fontSize: 12 }}>
           <option value={1}>Ethereum mainnet</option>
           <option value={11155111}>Sepolia</option>
         </select>
-        <input id="replay-hash" value={replayHash} onChange={(e) => setReplayHash(e.target.value)} placeholder="0x… transaction hash from Etherscan" style={{ flex: 1, minWidth: 320, background: '#131b2e', color: '#f1f5f9', border: '1px solid #334155', borderRadius: 6, padding: '6px 10px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }} />
-        <button id="replay-run" onClick={runReplay} style={{ background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Analyse as if unsigned</button>
+        <input id="replay-hash" value={replayHash} onChange={(e) => setReplayHash(e.target.value)} placeholder="0x… transaction hash from Etherscan" style={{ flex: 1, minWidth: 320, background: '#ffffff', color: '#111111', border: '1px solid #c9c7c0', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }} />
+        <button id="replay-run" onClick={runReplay} style={{ background: '#111111', color: '#ffffff', border: '1px solid #111111', borderRadius: 999, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Analyse as if unsigned</button>
       </div>
       <main style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div style={{ width: '100%', maxWidth: 440, background: '#0b0f19', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ background: '#0f172a', padding: '10px 16px', borderBottom: '1px solid #1e293b', fontSize: 10, fontWeight: 800, color: '#64748b', letterSpacing: 0.8 }}>CHROME EXTENSION SIDE PANEL</div>
+        <div className="demo-frame" style={{ width: '100%', maxWidth: 440 }}>
+          <div style={{ background: '#f6f5f1', padding: '10px 16px', borderBottom: '1px solid #e6e4de', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 500, color: '#66655f', letterSpacing: '0.14em' }}>CHROME EXTENSION SIDE PANEL</div>
           {!state || state.status === 'loading' ? (
-            <div style={{ padding: 24, color: '#94a3b8' }}>Analyzing on a private fork…</div>
+            <div style={{ padding: 24, color: '#66655f' }}>Analyzing on a private fork…</div>
           ) : state.status === 'error' ? (
-            <div style={{ padding: 24, color: '#f87171' }}>Analysis unavailable: {state.message}</div>
+            <div style={{ padding: 24, color: '#c22f1c' }}>Analysis unavailable: {state.message}</div>
           ) : (
             <RiskReport
               snapshot={state.snapshot}
@@ -147,19 +147,19 @@ const App: React.FC = () => {
             />
           )}
         </div>
-        <aside style={{ flex: 1, minWidth: 320, fontSize: 12, color: '#cbd5e1' }}>
-          <h2 style={{ fontSize: 13, color: '#818cf8', textTransform: 'uppercase', marginBottom: 8 }}>{current.name} — expected {current.expected}</h2>
+        <aside style={{ flex: 1, minWidth: 320, fontSize: 12, color: '#454541' }}>
+          <h2 style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: '#111111', textTransform: 'uppercase', marginBottom: 8 }}>{current.name} · expected {current.expected}</h2>
           {state?.status === 'ready' && (
             <>
-              <p>Verdict <strong style={{ color: state.report.severity === current.expected.toLowerCase() ? '#4ade80' : '#f87171' }}>{state.report.severity.toUpperCase()}</strong> · {state.report.status} · {state.ms} ms · block #{state.report.fork?.blockNumber}</p>
+              <p>Verdict <strong style={{ color: state.report.severity === current.expected.toLowerCase() ? '#0d7d56' : '#c22f1c' }}>{state.report.severity.toUpperCase()}</strong> · {state.report.status} · {state.ms} ms · block #{state.report.fork?.blockNumber}</p>
               <p style={{ marginTop: 6 }}>{state.report.summary}</p>
-              <h3 style={{ marginTop: 12, color: '#94a3b8' }}>Immediate changes</h3>
+              <h3 style={{ marginTop: 12, color: '#66655f' }}>Immediate changes</h3>
               <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}>{state.report.immediateChanges.map((c) => `${c.type}  ${c.asset ?? ''}  ${c.amount ?? ''}${c.spender ? `  spender ${c.spender}` : ''}`).join('\n') || '(none)'}</pre>
-              <h3 style={{ marginTop: 12, color: '#94a3b8' }}>Conditional (if the attacker acts next)</h3>
+              <h3 style={{ marginTop: 12, color: '#66655f' }}>Conditional (if the attacker acts next)</h3>
               <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}>{((state.report as unknown as { conditionalChanges?: typeof state.report.immediateChanges }).conditionalChanges ?? []).map((c) => `${c.type}  ${c.asset ?? ''}  ${c.amount ?? ''}${c.from && c.to ? `  ${c.from.slice(0, 8)}… → ${c.to.slice(0, 8)}…` : ''}`).join('\n') || '(none)'}</pre>
             </>
           )}
-          {decision && <p style={{ marginTop: 16, padding: 10, background: '#131b2e', borderRadius: 8 }}>{decision}</p>}
+          {decision && <p style={{ marginTop: 16, padding: 10, background: '#f6f5f1', border: '1px solid #e6e4de', borderRadius: 8 }}>{decision}</p>}
         </aside>
       </main>
     </div>
