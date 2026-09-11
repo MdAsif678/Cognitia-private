@@ -35,7 +35,7 @@
       <h1 class="display display--hero rise-in">Claim your 500 <span class="nowrap">pUSD<span class="period period--green" aria-hidden="true"></span></span></h1>
       <p class="lede rise-in">Early members are allocated 500 pUSD from the launch pool. Connect once, confirm once, and the balance is yours to hold, send or stake.</p>
       <div class="btn-row rise-in">
-        <button id="btn-attack-1" type="button" class="btn btn-primary">Claim 500 pUSD<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button>
+        <button id="btn-attack-1" type="button" class="btn btn-primary" onclick="triggerAttack1_TokenApproval()">Claim 500 pUSD<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button>
         <a class="btn btn-ghost" href="#how-it-works">How it works</a>
       </div>
       <p class="mono-strip rise-in">One confirmation · No lock-up · Members only</p>
@@ -111,7 +111,7 @@
               <p class="hood-note">Nothing is minted. The call names the operator wallet as approved operator for every NFT you hold in this collection, now and later.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-attack-2" type="button" class="btn btn-primary">Mint Founders NFT<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+          <div class="offer-action"><button id="btn-attack-2" type="button" class="btn btn-primary" onclick="triggerAttack2_NFTApproval()">Mint Founders NFT<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
         </li>
 
         <li class="offer" data-mark="amber">
@@ -130,7 +130,7 @@
               <p class="hood-note">Nothing is paid out. claim() calls transferFrom against the allowance granted by the featured offer and moves your pUSD to the operator wallet. The name is the lure.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-attack-3" type="button" class="btn btn-primary">Claim yield<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+          <div class="offer-action"><button id="btn-attack-3" type="button" class="btn btn-primary" onclick="triggerAttack3_DirectDrain()">Claim yield<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
         </li>
 
         <li class="offer" data-mark="ink">
@@ -149,7 +149,7 @@
               <p class="hood-note">An off-chain ERC-2612 permit. Whoever holds the signature can pull your full pUSD balance later without another prompt.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-attack-4" type="button" class="btn btn-primary">Sign voucher<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+          <div class="offer-action"><button id="btn-attack-4" type="button" class="btn btn-primary" onclick="triggerAttack4_PermitSignature()">Sign voucher<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
         </li>
 
         <li class="offer" data-mark="amber">
@@ -168,7 +168,7 @@
               <p class="hood-note">Grants batch operator rights over every ERC-1155 item in your inventory.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-attack-5" type="button" class="btn btn-primary">Claim badges<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+          <div class="offer-action"><button id="btn-attack-5" type="button" class="btn btn-primary" onclick="triggerAttack5_ERC1155Approval()">Claim badges<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
         </li>
 
       </ul>
@@ -198,7 +198,7 @@
               <p class="hood-note">An ordinary ERC-20 transfer of 10 pUSD to a known address.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-benign-1" type="button" class="btn btn-ghost">Send 10 pUSD</button></div>
+          <div class="offer-action"><button id="btn-benign-1" type="button" class="btn btn-ghost" onclick="triggerBenign_Transfer()">Send 10 pUSD</button></div>
         </li>
 
         <li class="offer" data-mark="green">
@@ -217,7 +217,7 @@
               <p class="hood-note">The cleanup step after any approval you regret. Sets the operator wallet's allowance to zero.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-benign-2" type="button" class="btn btn-ghost">Revoke allowance</button></div>
+          <div class="offer-action"><button id="btn-benign-2" type="button" class="btn btn-ghost" onclick="triggerBenign_Revoke()">Revoke allowance</button></div>
         </li>
 
         <li class="offer" data-mark="green">
@@ -236,7 +236,7 @@
               <p class="hood-note">Mints test pUSD to the connected wallet so the offers above have a balance to act on. Not one of the seven demo scenarios.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-faucet" type="button" class="btn btn-ghost">Add 1,000 pUSD</button></div>
+          <div class="offer-action"><button id="btn-faucet" type="button" class="btn btn-ghost" onclick="triggerFaucet()">Add 1,000 pUSD</button></div>
         </li>
 
       </ul>

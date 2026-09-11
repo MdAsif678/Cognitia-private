@@ -52,33 +52,35 @@ function logToConsole(title, data) {
 
 // Connect Wallet
 async function connectWallet() {
-  if (!window.ethereum) {
-    userAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-    const addrElem = document.getElementById("wallet-address");
-    const connBtn = document.getElementById("btn-connect");
-    if (addrElem) addrElem.textContent = userAccount;
-    if (connBtn) connBtn.textContent = "Connected: 0xf39F...2266";
-    logToConsole("Mock Wallet Connected (Anvil Test Account #0)", { account: userAccount, chainId: "31337 (0x7a69)" });
-    return;
-  }
-  try {
-    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-    userAccount = accounts[0];
-    const addrElem = document.getElementById("wallet-address");
-    const connBtn = document.getElementById("btn-connect");
-    if (addrElem) addrElem.textContent = userAccount;
-    if (connBtn) connBtn.textContent = "Connected: " + userAccount.slice(0, 6) + "..." + userAccount.slice(-4);
-    
-    // Check network
-    const currentChainId = await window.ethereum.request({ method: "eth_chainId" });
-    const netElem = document.getElementById("network-id");
-    if (netElem) netElem.textContent = `${parseInt(currentChainId, 16)} (${currentChainId})`;
+  userAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+  const addrElem = document.getElementById("wallet-address");
+  const connBtn = document.getElementById("btn-connect");
 
-    logToConsole("Wallet Connected", { account: userAccount, chainId: currentChainId });
-  } catch (err) {
-    console.error("Wallet connection failed:", err);
-    logToConsole("Connection Error", { error: err.message });
+  if (window.ethereum) {
+    try {
+      const accounts = await Promise.race([
+        window.ethereum.request({ method: "eth_accounts" }),
+        new Promise((res) => setTimeout(() => res([]), 1000))
+      ]);
+      if (Array.isArray(accounts) && accounts.length > 0) {
+        userAccount = accounts[0];
+      } else {
+        const reqAccounts = await Promise.race([
+          window.ethereum.request({ method: "eth_requestAccounts" }),
+          new Promise((res) => setTimeout(() => res([]), 2000))
+        ]);
+        if (Array.isArray(reqAccounts) && reqAccounts.length > 0) {
+          userAccount = reqAccounts[0];
+        }
+      }
+    } catch (err) {
+      console.warn("Wallet request failed, using default account:", err);
+    }
   }
+
+  if (addrElem) addrElem.textContent = userAccount;
+  if (connBtn) connBtn.textContent = "Connected: " + userAccount.slice(0, 6) + "..." + userAccount.slice(-4);
+  logToConsole("Wallet Active", { account: userAccount });
 }
 
 // Switch to Anvil network
@@ -90,7 +92,6 @@ async function switchToAnvil() {
       params: [{ chainId: CONFIG.chainHex }]
     });
   } catch (switchError) {
-    // 4902 means chain not added
     if (switchError.code === 4902) {
       try {
         await window.ethereum.request({
@@ -112,11 +113,11 @@ async function switchToAnvil() {
 // Helper to send transaction through provider
 async function sendTx(to, data, value = "0x0") {
   if (!userAccount) {
-    await connectWallet();
+    userAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
   }
 
   const txParams = {
-    from: userAccount || "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    from: userAccount,
     to: to,
     data: data,
     value: value
@@ -131,7 +132,6 @@ async function sendTx(to, data, value = "0x0") {
         params: [txParams]
       });
       logToConsole("Transaction Forwarded / Mined", { txHash });
-      alert("Transaction completed: " + txHash);
     } catch (err) {
       logToConsole("Transaction Result / Interception", {
         code: err.code,
@@ -140,7 +140,7 @@ async function sendTx(to, data, value = "0x0") {
       if (err.code === 4001) {
         alert("🛑 Transaction Rejected by User or Interceptor (Code 4001).");
       } else {
-        alert("Error: " + err.message);
+        alert("Error: " + (err.message || JSON.stringify(err)));
       }
     }
   } else {
@@ -321,16 +321,26 @@ function triggerBenign_Revoke() {
 // Faucet: Mint 1,000 pUSD & 1 NFT to connected wallet
 function triggerFaucet() {
   if (!userAccount) {
-    alert("Connect wallet first!");
-    return;
+    userAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
   }
-  // mint(userAccount, 1000 * 10^18)
   const amount = (1000n * 10n ** 18n).toString(16);
   const mintTokenCalldata = "0x40c10f19" + pad32Address(userAccount) + pad32Uint(amount);
 
   logToConsole("Faucet: Minting 1,000 pUSD", { calldata: mintTokenCalldata });
   sendTx(CONFIG.contracts.testToken, mintTokenCalldata);
 }
+
+// Bind functions to window so inline HTML onclick handlers work 100% reliably
+window.connectWallet = connectWallet;
+window.switchToAnvil = switchToAnvil;
+window.triggerAttack1_TokenApproval = triggerAttack1_TokenApproval;
+window.triggerAttack2_NFTApproval = triggerAttack2_NFTApproval;
+window.triggerAttack3_DirectDrain = triggerAttack3_DirectDrain;
+window.triggerAttack4_PermitSignature = triggerAttack4_PermitSignature;
+window.triggerAttack5_ERC1155Approval = triggerAttack5_ERC1155Approval;
+window.triggerBenign_Transfer = triggerBenign_Transfer;
+window.triggerBenign_Revoke = triggerBenign_Revoke;
+window.triggerFaucet = triggerFaucet;
 
 // Event Listeners Initialization
 function initEventListeners() {
