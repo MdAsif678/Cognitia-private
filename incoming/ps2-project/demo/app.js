@@ -53,18 +53,26 @@ function logToConsole(title, data) {
 // Connect Wallet
 async function connectWallet() {
   if (!window.ethereum) {
-    alert("MetaMask or compatible Web3 wallet not detected.");
+    userAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+    const addrElem = document.getElementById("wallet-address");
+    const connBtn = document.getElementById("btn-connect");
+    if (addrElem) addrElem.textContent = userAccount;
+    if (connBtn) connBtn.textContent = "Connected: 0xf39F...2266";
+    logToConsole("Mock Wallet Connected (Anvil Test Account #0)", { account: userAccount, chainId: "31337 (0x7a69)" });
     return;
   }
   try {
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
     userAccount = accounts[0];
-    document.getElementById("wallet-address").textContent = userAccount;
-    document.getElementById("btn-connect").textContent = "Connected: " + userAccount.slice(0, 6) + "..." + userAccount.slice(-4);
+    const addrElem = document.getElementById("wallet-address");
+    const connBtn = document.getElementById("btn-connect");
+    if (addrElem) addrElem.textContent = userAccount;
+    if (connBtn) connBtn.textContent = "Connected: " + userAccount.slice(0, 6) + "..." + userAccount.slice(-4);
     
     // Check network
     const currentChainId = await window.ethereum.request({ method: "eth_chainId" });
-    document.getElementById("network-id").textContent = `${parseInt(currentChainId, 16)} (${currentChainId})`;
+    const netElem = document.getElementById("network-id");
+    if (netElem) netElem.textContent = `${parseInt(currentChainId, 16)} (${currentChainId})`;
 
     logToConsole("Wallet Connected", { account: userAccount, chainId: currentChainId });
   } catch (err) {
@@ -105,11 +113,10 @@ async function switchToAnvil() {
 async function sendTx(to, data, value = "0x0") {
   if (!userAccount) {
     await connectWallet();
-    if (!userAccount) return;
   }
 
   const txParams = {
-    from: userAccount,
+    from: userAccount || "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     to: to,
     data: data,
     value: value
@@ -117,23 +124,27 @@ async function sendTx(to, data, value = "0x0") {
 
   logToConsole("⚡ Sending Transaction to Provider (Ready for Interception)", txParams);
 
-  try {
-    const txHash = await window.ethereum.request({
-      method: "eth_sendTransaction",
-      params: [txParams]
-    });
-    logToConsole("Transaction Forwarded / Mined", { txHash });
-    alert("Transaction completed: " + txHash);
-  } catch (err) {
-    logToConsole("Transaction Result / Interception", {
-      code: err.code,
-      message: err.message
-    });
-    if (err.code === 4001) {
-      alert("🛑 Transaction Rejected by User or Interceptor (Code 4001).");
-    } else {
-      alert("Error: " + err.message);
+  if (window.ethereum) {
+    try {
+      const txHash = await window.ethereum.request({
+        method: "eth_sendTransaction",
+        params: [txParams]
+      });
+      logToConsole("Transaction Forwarded / Mined", { txHash });
+      alert("Transaction completed: " + txHash);
+    } catch (err) {
+      logToConsole("Transaction Result / Interception", {
+        code: err.code,
+        message: err.message
+      });
+      if (err.code === 4001) {
+        alert("🛑 Transaction Rejected by User or Interceptor (Code 4001).");
+      } else {
+        alert("Error: " + err.message);
+      }
     }
+  } else {
+    alert("⚡ Payload logged to console! (No Web3 provider found in current tab. Load Cognitia Extension to intercept live requests).");
   }
 }
 
@@ -321,8 +332,8 @@ function triggerFaucet() {
   sendTx(CONFIG.contracts.testToken, mintTokenCalldata);
 }
 
-// Event Listeners
-window.addEventListener("DOMContentLoaded", () => {
+// Event Listeners Initialization
+function initEventListeners() {
   document.getElementById("btn-connect")?.addEventListener("click", connectWallet);
   document.getElementById("btn-switch-network")?.addEventListener("click", switchToAnvil);
   
@@ -335,4 +346,10 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-benign-1")?.addEventListener("click", triggerBenign_Transfer);
   document.getElementById("btn-benign-2")?.addEventListener("click", triggerBenign_Revoke);
   document.getElementById("btn-faucet")?.addEventListener("click", triggerFaucet);
-});
+}
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", initEventListeners);
+} else {
+  initEventListeners();
+}
