@@ -275,7 +275,9 @@ export function baselineAssess(input: AssessInput): Assessment {
       const via = usedAllowance && usedAllowance.kind === "erc20-allowance" ? ` It spends an approval you granted earlier to ${short(usedAllowance.spender)}.` : "";
       add({
         ruleId: "transfer.hidden-outflow",
-        severity: "high",
+        // Assets leave the wallet now, with nothing received, under a function that does not say so:
+        // this is theft in progress, not a future risk, so it outranks approvals.
+        severity: "critical",
         title: `Moves ${o.text} out of your wallet`,
         explanation: `The site presents this as ${fn ? `"${fn}"` : "an unrecognised function"}, but simulation shows ${o.text} leaving your wallet to ${to} with nothing received in return.${via}`,
         confidence: "high",

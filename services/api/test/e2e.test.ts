@@ -68,9 +68,9 @@ describe.skipIf(!anvilAvailable())("POST /v1/analyze end to end (local upstream 
     expect(r.potentialExposure[0]).toMatchObject({ unlimited: true, atRisk: { erc20Balance: parseEther("1000").toString() } });
   });
 
-  it("misleading claim(): hidden outflow flagged high", async () => {
+  it("misleading claim(): hidden outflow flagged critical", async () => {
     const r = await analyze(sendTx(up.addresses.drainer, call("TestDrainer", "claim", [up.addresses.token])));
-    expect(r.severity).toBe("high");
+    expect(r.severity).toBe("critical");
     const f = r.findings.find((x) => x.ruleId === "transfer.hidden-outflow");
     expect(f?.title).toMatch(/500 TUSD/);
     expect(r.intent?.known).toBe(false);
