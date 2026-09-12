@@ -3,6 +3,8 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { createPublicClient, http, encodeFunctionData, parseAbi, maxUint256 } from 'viem';
 import { parseAnalysisReport } from '../incoming/atif-extension/src/shared/api-contract';
 const d = JSON.parse(await readFile('incoming/ps2-project/demo/deployment.json', 'utf8'));
+const apiBaseUrl = process.env.TEST_API_URL ?? d.apiBaseUrl;
+const reportDirectory = process.env.TEST_REPORT_DIR ?? 'artifacts/demo-reports';
 const client = createPublicClient({ transport: http(d.rpcUrl) });
 const blockBefore = await client.getBlockNumber({ cacheTime: 0 });
 const abi = parseAbi(['function approve(address,uint256) returns (bool)', 'function transfer(address,uint256) returns (bool)', 'function setApprovalForAll(address,bool)', 'function claim()', 'function nonces(address) view returns (uint256)']);
@@ -19,13 +21,13 @@ const scenarios = [
   ['unknown-selector', { method: 'eth_sendTransaction', params: [{ from: d.testWallet, to: d.contracts.testToken, data: '0xdeadbeef', value: '0x0' }] }, 'non-low', null],
   ['personal-sign', { method: 'personal_sign', params: ['0x48656c6c6f', d.testWallet] }, 'non-low', null],
 ] as const;
-await mkdir('artifacts/demo-reports', { recursive: true });
+await mkdir(reportDirectory, { recursive: true });
 for (const [name, request, expected, change] of scenarios) {
   const payload = { requestId: `smoke-${name}`, origin: 'http://localhost:3000', chainId: 31337, account: d.testWallet, ...request };
-  const response = await fetch(`${d.apiBaseUrl}/v1/analyze`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(60000) });
+  const response = await fetch(`${apiBaseUrl}/v1/analyze`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(60000) });
   assert.equal(response.status, 200);
   const report = await response.json();
-  await writeFile(`artifacts/demo-reports/${name}.json`, JSON.stringify(report, null, 2));
+  await writeFile(`${reportDirectory}/${name}.json`, JSON.stringify(report, null, 2));
   const parsed = parseAnalysisReport(report);
   assert.ok(parsed.success, `${name}: report rejected by extension schema`);
   assert.notEqual(report.status, 'failed', `${name}: ${report.summary}`);
@@ -40,4 +42,4 @@ for (const [name, request, expected, change] of scenarios) {
   console.log(`${name}: ${report.severity} (${report.status}, ${report.durationMs} ms)`);
 }
 assert.equal(await client.getBlockNumber({ cacheTime: 0 }), blockBefore, 'Analysis must never mine on the upstream chain');
-console.log('All nine scenarios passed; upstream block unchanged. Evidence: artifacts/demo-reports/');
+console.log(`All nine scenarios passed; upstream block unchanged. Evidence: ${reportDirectory}/`);

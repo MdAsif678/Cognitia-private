@@ -45,7 +45,7 @@ if (typeof globalThis.window === 'undefined') {
 async function run() {
   console.log('--- Starting Automated Test Suites via Vite SSR Loader ---');
   const server = await createServer({
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: false },
     appType: 'custom',
   });
 

@@ -20,6 +20,7 @@ export function renderReport(root, report) {
   root.replaceChildren();
   const heading = element('h1', report.summary || 'Analysis unavailable');
   heading.id = 'report-title';
+  heading.tabIndex = -1;
   root.append(heading, element('p', `${String(report.severity).toUpperCase()} · ${report.status} · ${report.simulation?.outcome ?? 'not executed'}`, 'report-verdict'));
   root.append(element('p', report.fork ? `Chain ${report.fork.chainId} · Fork block ${report.fork.blockNumber} · ${report.fork.blockHash}` : 'No fork execution was available. No safety conclusion can be drawn.', 'report-meta'));
   if (report.analyzedAt) root.append(element('p', `Analyzed ${report.analyzedAt} · ${report.durationMs} ms`, 'report-meta'));

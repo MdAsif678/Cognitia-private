@@ -34,17 +34,30 @@ jobs:
         env:
           API_BASE_URL: ${{ vars.ANALYSIS_API_URL || 'http://localhost:8080' }}
         run: npm run build
-      - name: Deploy local contracts and verify all testbed scenarios
+      - name: Build deployable image
+        run: docker build -f services/api/Dockerfile -t cognitia-api:ci .
+      - name: Verify source API, packaged API and Docker runtime against local contracts
         run: |
           npm run dev:demo > /tmp/cognitia-demo.log 2>&1 &
           DEMO_PID=$!
-          trap 'kill "$DEMO_PID" 2>/dev/null || true' EXIT
+          trap 'docker rm -f cognitia-api-smoke 2>/dev/null || true; kill "$DEMO_PID" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 90); do
             if curl --fail --silent http://127.0.0.1:8080/ready > /dev/null; then break; fi
             sleep 1
           done
           curl --fail http://127.0.0.1:8080/ready
           npm run test:demo
+          npm run test:packaged
+          docker run --detach --name cognitia-api-smoke --network host \
+            -e PORT=8082 -e HOST=127.0.0.1 -e SIM_CHAINS=31337 \
+            -e RPC_URL_31337=http://127.0.0.1:8545 -e WARM_FORKS_PER_CHAIN=0 \
+            -e ENABLE_DEBUG_ROUTES=false cognitia-api:ci
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8082/ready > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail http://127.0.0.1:8082/ready
+          TEST_API_URL=http://127.0.0.1:8082 TEST_REPORT_DIR=artifacts/container-reports npm run test:demo
       - uses: actions/upload-artifact@v4
         with:
           name: cognitia-extension
@@ -53,6 +66,7 @@ jobs:
         if: always()
         with:
           name: simulation-evidence
-          path: artifacts/demo-reports/
-      - name: Build deployable image
-        run: docker build -f services/api/Dockerfile -t cognitia-api:ci .
+          path: |
+            artifacts/demo-reports/
+            artifacts/packaged-reports/
+            artifacts/container-reports/

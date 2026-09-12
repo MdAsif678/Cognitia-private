@@ -17,6 +17,7 @@
     "dev:demo": "node scripts/dev-demo.mjs",
     "deploy:local": "tsx scripts/deploy-local.ts",
     "test:demo": "tsx scripts/test-demo.ts",
+    "test:packaged": "npm run build -w @cognitia/api && node scripts/test-packaged.mjs",
     "test:wallet": "node --test incoming/ps2-project/demo/wallet.test.mjs",
     "test:mainnet": "tsx scripts/test-mainnet.ts"
   },

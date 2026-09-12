@@ -74,11 +74,13 @@ forge test --root incoming/ps2-project
 npm run build
 # With dev:demo running:
 npm run test:demo
+# Verify the bundled production API from an isolated folder, with the same chain:
+npm run test:packaged
 # Optional read-only live mainnet fork verification:
 npm run test:mainnet
 ```
 
-The smoke test sends the seven demo requests plus unknown calldata and personal signing through the real HTTP API, validates every response using the extension schema, checks expected severities/state changes, and verifies that the upstream block is unchanged. Reports are saved in `artifacts/demo-reports`. Solidity and fork integration tests also cover ERC-1155 transfers, single-NFT approvals, delegatecalls, concurrency and upstream state isolation.
+The smoke test sends the seven demo requests plus unknown calldata and personal signing through the real HTTP API, validates every response using the extension schema, checks expected severities/state changes, and verifies that the upstream block is unchanged. Reports are saved in `artifacts/demo-reports`. `test:packaged` copies only the built server into a temporary folder, checks readiness and disabled debug routes, and repeats the scenarios without repository dependencies. Its reports are in `artifacts/packaged-reports`. CI also runs the same scenarios against the Docker image and uploads `artifacts/container-reports`. `TEST_API_URL` and `TEST_REPORT_DIR` override the smoke-test endpoint and evidence directory. Solidity and fork integration tests also cover ERC-1155 transfers, single-NFT approvals, delegatecalls, concurrency and upstream state isolation.
 
 ## GitHub Actions deployment
 

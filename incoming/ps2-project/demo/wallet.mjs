@@ -16,6 +16,7 @@ export class WalletSession {
     if (this.provider === provider) return;
     if (this.provider) for (const [event, listener] of Object.entries(this.listeners)) this.provider.removeListener?.(event, listener);
     this.provider = provider;
+    this.connecting = null;
     this.account = null;
     this.chain = null;
     if (provider) for (const [event, listener] of Object.entries(this.listeners)) provider.on?.(event, listener);
@@ -32,41 +33,51 @@ export class WalletSession {
   }
   connect() {
     if (this.connecting) return this.connecting;
-    this.connecting = (async () => {
+    const attempt = (async () => {
       if (!this.provider) throw new Error('No wallet found. Install or unlock MetaMask, then reload. You can also use read-only demo analysis.');
       const provider = this.provider;
       try {
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         if (this.provider !== provider) throw new Error('Wallet changed while connecting.');
         if (!accounts?.[0]) throw new Error('Wallet did not authorize an account.');
+        const chain = Number(await provider.request({ method: 'eth_chainId' }));
+        if (this.provider !== provider) throw new Error('Wallet changed while connecting.');
         this.account = accounts[0];
-        this.chain = Number(await provider.request({ method: 'eth_chainId' }));
+        this.chain = chain;
         this.onChange(this);
         return this.account;
       } catch (error) {
-        this.account = null;
-        this.onChange(this);
+        if (this.provider === provider) {
+          this.account = null;
+          this.onChange(this);
+        }
         throw error;
       }
-    })().finally(() => { this.connecting = null; });
-    return this.connecting;
+    })().finally(() => { if (this.connecting === attempt) this.connecting = null; });
+    this.connecting = attempt;
+    return attempt;
   }
   async ensureLocal() {
     if (!this.account) await this.connect();
     await this.refresh();
     if (!this.account) throw new Error('Wallet is locked or disconnected. Connect again.');
+    const provider = this.provider;
     if (this.chain !== this.chainId) {
       const chainId = `0x${this.chainId.toString(16)}`;
       try {
-        await this.provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
+        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
       } catch (error) {
         if (error.code !== 4902 && error.data?.originalError?.code !== 4902) throw error;
-        await this.provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId, chainName: this.chainName, rpcUrls: [this.rpcUrl], nativeCurrency: { name: 'Test ETH', symbol: 'ETH', decimals: 18 } }] });
-        await this.provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
+        if (this.provider !== provider) throw new Error('Wallet changed while switching networks.');
+        await provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId, chainName: this.chainName, rpcUrls: [this.rpcUrl], nativeCurrency: { name: 'Test ETH', symbol: 'ETH', decimals: 18 } }] });
+        if (this.provider !== provider) throw new Error('Wallet changed while switching networks.');
+        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
       }
+      if (this.provider !== provider) throw new Error('Wallet changed while switching networks.');
       await this.refresh();
     }
     if (this.chain !== this.chainId) throw new Error('Wrong network. Demo requests are restricted to local chain 31337.');
+    if (!this.account) throw new Error('Wallet disconnected while switching networks. Connect again.');
     return this.account;
   }
 }

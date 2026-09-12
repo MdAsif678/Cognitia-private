@@ -4,7 +4,7 @@
 
 FROM node:22-bookworm-slim AS build
 WORKDIR /repo
-# The whole repo is copied so the lockfile matches every workspace; only the API's deps are installed.
+# The whole repo is copied so the lockfile matches every workspace and the integrated risk engine.
 COPY . .
 RUN npm ci --ignore-scripts
 RUN npm run build -w @cognitia/api

@@ -67,6 +67,9 @@ async function runRequest(build) {
     document.getElementById('review-mode').textContent = readOnly ? `Read-only analysis of seeded demo account ${ctx.account}. No wallet is connected by this mode; nothing can be signed or broadcast.` : 'Review before signing. Continue sends this exact request to your selected wallet; the Cognitia extension can intercept it again.';
     status.textContent = report.summary;
     dialog.showModal();
+    // Native dialog autofocus otherwise scrolls a long report to the action buttons.
+    document.getElementById('report-title').focus({ preventScroll: true });
+    dialog.scrollTop = 0;
     const accepted = await new Promise(resolve => {
       const finish = value => { pendingReview = null; dialog.close(); resolve(value); };
       pendingReview = finish;
