@@ -285,6 +285,18 @@ if (document.readyState === "loading") {
   initEventListeners();
 }
 
+// The extension injects a MAIN-world marker as soon as its content script runs. Without it every
+// offer below goes straight to the wallet with no review, which otherwise looks like normal
+// behaviour, so say so plainly instead of letting the testbed appear to work.
+function reportInterceptor() {
+  const status = document.getElementById('demo-status');
+  const active = Boolean(window.__cognitiaInterceptor?.active);
+  status.dataset.interceptor = active ? 'active' : 'missing';
+  status.textContent = active
+    ? 'Testbed ready and Cognitia is watching this page. Connect your local test wallet, then choose an offer. Simulation and risk review happen in the extension.'
+    : 'Cognitia is NOT watching this page, so offers will go straight to your wallet unreviewed. Load the extension at chrome://extensions, then reload this page. A tab opened before the extension was loaded never receives it.';
+}
+
 async function initializeDemo() {
   const providers = new Map();
   const select = document.getElementById('wallet-select');
@@ -311,6 +323,6 @@ async function initializeDemo() {
     const oldAddresses = { '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6': CONFIG.contracts.testToken, '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318': CONFIG.contracts.testNFT, '0x610178dA211FEF7D417bC0e6FeD39F05609AD788': CONFIG.contracts.testERC1155, '0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e': CONFIG.contracts.fakeRewardsDrainer };
     for (const node of document.querySelectorAll('.hood-rows dd')) for (const [old, address] of Object.entries(oldAddresses)) if (node.textContent.includes(old)) node.textContent = node.textContent.replace(old, address);
     if (CONFIG.chainId !== 31337) throw new Error('Only local demo deployments are supported by this testbed.');
-    document.getElementById('demo-status').textContent = 'Testbed ready. Load Cognitia, connect your local test wallet, then choose an offer. All simulation and risk review happens in the extension.';
+    reportInterceptor();
   } catch (error) { showError(error); }
 }

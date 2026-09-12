@@ -11,6 +11,7 @@ import {
 } from '../shared/types';
 import {
   APPLICATION_NAMESPACE,
+  INTERCEPTOR_MARKER,
   SUPPORTED_METHODS,
   UNSUPPORTED_SIGNING_METHODS,
 } from '../shared/constants';
@@ -69,6 +70,20 @@ export class ProviderInterceptor {
   public start(): void {
     logger.interceptor('[Interceptor] Starting provider interception layer...');
     this.discovery.initialize();
+    // A page-readable marker so a dapp can tell the difference between "the extension reviewed
+    // this" and "the extension was never here". Without it, a content script that failed to
+    // inject (extension not loaded, or the tab opened before it was) looks identical to normal
+    // operation right up until every request lands straight in the wallet.
+    try {
+      Object.defineProperty(window, INTERCEPTOR_MARKER, {
+        value: Object.freeze({ active: true, methods: [...SUPPORTED_METHODS] }),
+        configurable: true,
+        enumerable: false,
+        writable: false,
+      });
+    } catch {
+      // A page that already defined the marker non-configurably is not our concern.
+    }
   }
 
   /**

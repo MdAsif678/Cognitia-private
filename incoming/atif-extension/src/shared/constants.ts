@@ -14,6 +14,12 @@ export const EVENT_BRIDGE_CHANNEL = '__PRE_EXECUTION_INTERCEPTOR_V1_BRIDGE__';
 
 
 /**
+ * Page-readable marker set on `window` once the MAIN-world interceptor is running, so a dapp can
+ * distinguish "reviewed by Cognitia" from "the content script never injected".
+ */
+export const INTERCEPTOR_MARKER = '__cognitiaInterceptor';
+
+/**
  * Explicitly supported signing and transaction methods.
  */
 export const SUPPORTED_METHODS: readonly SupportedMethod[] = [

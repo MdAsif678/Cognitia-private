@@ -33,3 +33,15 @@
   --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
+
+/* Extension presence. Missing is the dangerous state, so it is the loud one. */
+#demo-status[data-interceptor='missing'] {
+  border-left: 3px solid var(--red, #c22f1c);
+  padding-left: 12px;
+  color: var(--red, #c22f1c);
+  font-weight: 500;
+}
+#demo-status[data-interceptor='active'] {
+  border-left: 3px solid var(--green, #0d7d56);
+  padding-left: 12px;
+}
