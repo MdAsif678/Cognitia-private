@@ -1,10 +1,8 @@
 import { WalletSession } from './wallet.mjs';
-import { renderReport } from './report.mjs';
 
 let CONFIG;
 let userAccount = null;
 let busy = false;
-let pendingReview = null;
 const wallet = new WalletSession({ chainId: 31337, chainName: 'Anvil Local PS2', rpcUrl: 'http://127.0.0.1:8545', onChange: state => {
   userAccount = state.account;
   const addr = document.getElementById('wallet-address');
@@ -13,9 +11,7 @@ const wallet = new WalletSession({ chainId: 31337, chainName: 'Anvil Local PS2',
   if (button) button.textContent = state.account ? `${state.account.slice(0, 6)}…${state.account.slice(-4)}` : 'Connect Wallet';
   const network = document.getElementById('network-id');
   if (network) network.textContent = state.chain ? `${state.chain}${state.chain === 31337 ? ' (Anvil)' : ' — switch required'}` : 'Not connected';
-  if (pendingReview) pendingReview(false);
 }});
-const previewOnly = () => document.getElementById('preview-only').checked;
 function showError(error) {
   const message = error.code === 4001 ? 'Request rejected. Nothing was signed.' : error.code === -32002 ? 'A wallet request is already open. Check MetaMask.' : error.message || String(error);
   document.getElementById('demo-status').textContent = message;
@@ -38,7 +34,8 @@ async function context() {
   if (!CONFIG) throw new Error('Demo deployment is missing. Run npm run dev:demo from the repository root.');
   const chain = Number(await rpc('eth_chainId'));
   if (chain !== 31337) throw new Error('Demo RPC must be local chain 31337.');
-  const account = previewOnly() ? CONFIG.testWallet : await wallet.ensureLocal();
+  if (!wallet.provider && window.ethereum) wallet.use(window.ethereum);
+  const account = await wallet.ensureLocal();
   return { account, chainId: 31337 };
 }
 async function runRequest(build) {
@@ -48,41 +45,14 @@ async function runRequest(build) {
   try {
     const ctx = await context();
     const provider = wallet.provider;
-    const readOnly = previewOnly();
     const request = await build(ctx);
     const target = request.method === 'eth_sendTransaction' ? request.params[0].to : CONFIG.contracts.testToken;
     if (target && await rpc('eth_getCode', [target, 'latest']) === '0x') throw new Error('Demo contracts are not deployed on this chain. Restart npm run dev:demo.');
-    status.textContent = 'Analyzing live fork. No signing request has reached your wallet.';
-    const payload = { requestId: crypto.randomUUID(), origin: location.origin, ...ctx, ...request };
-    const response = await fetch(`${CONFIG.apiBaseUrl}/v1/analyze`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(55000) });
-    if (!response.ok) throw new Error(`Analysis API returned HTTP ${response.status}. Check the API terminal.`);
-    const report = await response.json();
-    if (report.requestId !== payload.requestId || !Array.isArray(report.findings)) throw new Error('Analysis API returned an invalid report.');
-    sessionStorage.setItem('cognitia:last-report', JSON.stringify({ request: payload, report }));
-    renderReport(document.getElementById('review-report'), report);
-    const dialog = document.getElementById('review-dialog');
-    const proceed = document.getElementById('review-continue');
-    proceed.hidden = readOnly || report.status === 'failed';
-    proceed.disabled = false;
-    document.getElementById('review-mode').textContent = readOnly ? `Read-only analysis of seeded demo account ${ctx.account}. No wallet is connected by this mode; nothing can be signed or broadcast.` : 'Review before signing. Continue sends this exact request to your selected wallet; the Cognitia extension can intercept it again.';
-    status.textContent = report.summary;
-    dialog.showModal();
-    // Native dialog autofocus otherwise scrolls a long report to the action buttons.
-    document.getElementById('report-title').focus({ preventScroll: true });
-    dialog.scrollTop = 0;
-    const accepted = await new Promise(resolve => {
-      const finish = value => { pendingReview = null; dialog.close(); resolve(value); };
-      pendingReview = finish;
-      proceed.onclick = () => finish(true);
-      document.getElementById('review-reject').onclick = () => finish(false);
-      dialog.oncancel = event => { event.preventDefault(); finish(false); };
-    });
-    if (!accepted || readOnly || report.status === 'failed') return;
-    // Re-check after the review to prevent account/network changes from reusing approval.
+    // Ordinary dapp request. Only the extension analyzes and owns the signing decision.
     await wallet.refresh();
-    if (provider !== wallet.provider || wallet.account?.toLowerCase() !== ctx.account.toLowerCase() || wallet.chain !== ctx.chainId) throw new Error('Wallet context changed. Run analysis again.');
-    if (Date.now() - Date.parse(report.analyzedAt) > 120000) throw new Error('Report expired. Run analysis again before signing.');
-    status.textContent = 'Request sent for wallet review. Check Cognitia and your wallet.';
+    if (provider !== wallet.provider || wallet.account?.toLowerCase() !== ctx.account.toLowerCase() || wallet.chain !== ctx.chainId) throw new Error('Wallet context changed. Try the request again.');
+    logToConsole('Wallet request', request);
+    status.textContent = 'Wallet request pending. Open the Cognitia extension to review its simulation and risk report.';
     const result = await provider.request(request);
     logToConsole('Wallet returned', { result });
     status.textContent = request.method === 'eth_sendTransaction' ? `Wallet returned transaction hash: ${result}` : 'Wallet produced a signature. It has not been submitted on-chain by this page.';
@@ -341,8 +311,6 @@ async function initializeDemo() {
     const oldAddresses = { '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6': CONFIG.contracts.testToken, '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318': CONFIG.contracts.testNFT, '0x610178dA211FEF7D417bC0e6FeD39F05609AD788': CONFIG.contracts.testERC1155, '0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e': CONFIG.contracts.fakeRewardsDrainer };
     for (const node of document.querySelectorAll('.hood-rows dd')) for (const [old, address] of Object.entries(oldAddresses)) if (node.textContent.includes(old)) node.textContent = node.textContent.replace(old, address);
     if (CONFIG.chainId !== 31337) throw new Error('Only local demo deployments are supported by this testbed.');
-    const health = await fetch(`${CONFIG.apiBaseUrl}/health`, { signal: AbortSignal.timeout(5000) });
-    if (!health.ok) throw new Error('Analysis API is not ready.');
-    document.getElementById('demo-status').textContent = 'Analysis API connected. Read-only mode uses the seeded demo account; switch it off to review real wallet requests.';
+    document.getElementById('demo-status').textContent = 'Testbed ready. Load Cognitia, connect your local test wallet, then choose an offer. All simulation and risk review happens in the extension.';
   } catch (error) { showError(error); }
 }

@@ -1,0 +1,35 @@
+:root {
+  color-scheme: light;
+
+  --ground: #f6f5f1;
+  --surface: #ffffff;
+  --line: #e6e4de;
+  --line-2: #c9c7c0;
+  --ink: #111111;
+  --text: #454541;
+  --muted: #66655f;
+  --green: #0d7d56;
+  --amber: #8f6410;
+  --amber-mark: #b8801a;
+  --red: #c22f1c;
+  --red-on-ink: #ef5a45;
+
+  --sev-critical: var(--red);
+  --sev-high: #a84a0c;
+  --sev-medium: var(--amber);
+  --sev-low: var(--green);
+  --sev-unknown: var(--muted);
+  --sev: var(--sev-unknown);
+  --tone: var(--muted);
+
+  --r-lg: 16px;
+  --r-md: 8px;
+  --r-pill: 999px;
+
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --shadow-card: 0 24px 60px -28px rgba(17, 17, 17, 0.22), 0 1px 0 rgba(17, 17, 17, 0.04);
+
+  --display: 'Inter Tight', 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

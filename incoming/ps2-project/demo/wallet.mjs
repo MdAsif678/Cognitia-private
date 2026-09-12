@@ -34,7 +34,7 @@ export class WalletSession {
   connect() {
     if (this.connecting) return this.connecting;
     const attempt = (async () => {
-      if (!this.provider) throw new Error('No wallet found. Install or unlock MetaMask, then reload. You can also use read-only demo analysis.');
+      if (!this.provider) throw new Error('No wallet found. Install or unlock MetaMask, load the Cognitia extension, then reload this testbed.');
       const provider = this.provider;
       try {
         const accounts = await provider.request({ method: 'eth_requestAccounts' });

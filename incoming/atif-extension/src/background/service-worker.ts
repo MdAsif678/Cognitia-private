@@ -171,15 +171,19 @@ class BackgroundCoordinator {
       return;
     }
 
-    // 2. Open side panel to show user the analysis interface
+    // 2. Open extension-owned review. Chrome may reject sidePanel.open after the
+    // asynchronous wallet context lookup consumes the original user gesture.
+    let panelOpened = false;
     if (tab?.id && chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
       try {
         await chrome.sidePanel.open({ tabId: tab.id });
+        panelOpened = true;
       } catch {
-        if (tab.windowId) {
-          await chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => {});
-        }
+        // Use a dedicated extension window below, never a dapp-owned dialog.
       }
+    }
+    if (!panelOpened) {
+      await chrome.windows.create({ url: chrome.runtime.getURL('sidepanel/index.html'), type: 'popup', width: 440, height: 760 }).catch(() => {});
     }
 
     // 3. Transition to ANALYZING and notify page & side panel

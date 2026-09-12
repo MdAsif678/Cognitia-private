@@ -13,8 +13,8 @@ export const Forwarding: React.FC<ForwardingProps> = ({ snapshot }) => (
     tone="info"
     icon="wallet"
     busy
-    title="Opening MetaMask"
-    description="The exact original request is being forwarded. Review and sign it inside MetaMask."
+    title="Open your wallet"
+    description="The reviewed request has been released to your selected wallet. Your wallet still requires confirmation."
     facts={
       snapshot
         ? [
@@ -27,7 +27,7 @@ export const Forwarding: React.FC<ForwardingProps> = ({ snapshot }) => (
     footnote={
       <>
         <Icon name="info" size={12} />
-        If the MetaMask popup does not appear, click the MetaMask icon in the browser toolbar.
+        If the wallet prompt does not appear, open your wallet from the browser toolbar.
       </>
     }
   />

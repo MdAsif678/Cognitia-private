@@ -8,6 +8,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Load .env files so API_BASE_URL can be baked into the extension build
 const buildEnv = loadEnv('production', __dirname, '');
+const apiUrl = new URL(buildEnv.API_BASE_URL || 'http://localhost:8080');
+if (!['http:', 'https:'].includes(apiUrl.protocol) || apiUrl.username || apiUrl.password) {
+  throw new Error('API_BASE_URL must be an HTTP(S) URL without embedded credentials.');
+}
 
 const buildTimeDefine = {
   // Statically injected into every bundle; see src/shared/config.ts.
@@ -108,7 +112,10 @@ async function runBuild() {
 
   // 5. Copy manifest.json to dist/manifest.json
   console.log('[Build] Copying manifest.json to dist/manifest.json...');
-  fs.copyFileSync(resolve(__dirname, 'manifest.json'), resolve(__dirname, 'dist/manifest.json'));
+  const manifest = JSON.parse(fs.readFileSync(resolve(__dirname, 'manifest.json'), 'utf8'));
+  // Chrome match patterns omit ports. Grant access only to the configured API host.
+  manifest.host_permissions = [`${apiUrl.protocol}//${apiUrl.hostname}/*`];
+  fs.writeFileSync(resolve(__dirname, 'dist/manifest.json'), JSON.stringify(manifest, null, 2));
 
   console.log('[Build] Extension successfully built to dist/ ready for Chrome "Load unpacked"!');
 }

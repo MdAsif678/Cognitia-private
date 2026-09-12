@@ -19,9 +19,14 @@
     "test:demo": "tsx scripts/test-demo.ts",
     "test:packaged": "npm run build -w @cognitia/api && node scripts/test-packaged.mjs",
     "test:wallet": "node --test incoming/ps2-project/demo/wallet.test.mjs",
-    "test:mainnet": "tsx scripts/test-mainnet.ts"
+    "test:mainnet": "tsx scripts/test-mainnet.ts",
+    "build:demo-extension": "node scripts/build-demo-extension.mjs",
+    "test:extension": "npm run build:demo-extension && node scripts/test-extension.mjs"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
   }
 }

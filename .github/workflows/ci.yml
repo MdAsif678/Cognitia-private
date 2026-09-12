@@ -21,6 +21,8 @@ jobs:
         with:
           version: v1.8.1
       - run: npm ci
+      - name: Install Chromium for extension checks
+        run: npx playwright install --with-deps chromium
       - name: Install pinned contract dependencies
         working-directory: incoming/ps2-project
         run: |
@@ -48,6 +50,7 @@ jobs:
           curl --fail http://127.0.0.1:8080/ready
           npm run test:demo
           npm run test:packaged
+          npm run test:extension
           docker run --detach --name cognitia-api-smoke --network host \
             -e PORT=8082 -e HOST=127.0.0.1 -e SIM_CHAINS=31337 \
             -e RPC_URL_31337=http://127.0.0.1:8545 -e WARM_FORKS_PER_CHAIN=0 \
@@ -58,6 +61,10 @@ jobs:
           done
           curl --fail http://127.0.0.1:8082/ready
           TEST_API_URL=http://127.0.0.1:8082 TEST_REPORT_DIR=artifacts/container-reports npm run test:demo
+      - name: Build extension for configured deployment API
+        env:
+          API_BASE_URL: ${{ vars.ANALYSIS_API_URL || 'http://localhost:8080' }}
+        run: npm run build -w @cognitia/extension
       - uses: actions/upload-artifact@v4
         with:
           name: cognitia-extension
@@ -70,3 +77,4 @@ jobs:
             artifacts/demo-reports/
             artifacts/packaged-reports/
             artifacts/container-reports/
+            artifacts/extension-e2e/

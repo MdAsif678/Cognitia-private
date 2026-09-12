@@ -67,6 +67,13 @@ export type SimulationOutcome = 'success' | 'revert' | 'not-executed';
  * `type` identifies the change kind (e.g. "erc20_transfer", "erc20_approve", "native_transfer").
  */
 export interface StateChange {
+  readonly kind?: string;
+  readonly token?: HexAddress;
+  readonly account?: HexAddress;
+  readonly owner?: HexAddress;
+  readonly operator?: HexAddress;
+  readonly before?: string | boolean;
+  readonly after?: string | boolean;
   readonly type: string;
   readonly asset?: string;
   readonly from?: HexAddress;
@@ -123,6 +130,8 @@ export interface AnalysisReport {
 
   readonly findings: readonly ReportFinding[];
   readonly immediateChanges: readonly StateChange[];
+  readonly conditionalChanges?: readonly StateChange[];
+  readonly tokens?: readonly { address: HexAddress; symbol?: string; decimals?: number }[];
   readonly potentialExposure: readonly Exposure[];
 
   readonly coverage: {
@@ -146,6 +155,13 @@ const reportFindingSchema = z.looseObject({
 });
 
 const stateChangeSchema = z.looseObject({
+  kind: z.string().optional(),
+  token: hexAddressSchema.optional(),
+  account: hexAddressSchema.optional(),
+  owner: hexAddressSchema.optional(),
+  operator: hexAddressSchema.optional(),
+  before: z.union([z.string(), z.boolean()]).optional(),
+  after: z.union([z.string(), z.boolean()]).optional(),
   type: nonEmptyString('stateChange.type is required'),
   asset: z.string().optional(),
   from: hexAddressSchema.optional(),
@@ -183,6 +199,8 @@ export const AnalysisReportSchema = z.looseObject({
 
   findings: z.array(reportFindingSchema),
   immediateChanges: z.array(stateChangeSchema),
+  conditionalChanges: z.array(stateChangeSchema).optional(),
+  tokens: z.array(z.looseObject({ address: hexAddressSchema, symbol: z.string().optional(), decimals: z.number().int().min(0).max(255).optional() })).optional(),
   potentialExposure: z.array(exposureSchema),
 
   coverage: z.looseObject({

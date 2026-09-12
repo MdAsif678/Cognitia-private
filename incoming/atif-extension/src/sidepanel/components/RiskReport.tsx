@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PendingRequestSnapshot, AnalysisResult } from '../../shared/types';
 import { AnalysisReport, ReportSeverity } from '../../shared/api-contract';
 import { Icon, IconName } from './Icon';
+import { StateDiff } from './StateDiff';
 import '../styles.css';
 
 export interface RiskReportProps {
@@ -160,9 +161,9 @@ export const RiskReport: React.FC<RiskReportProps> = ({
       id="btn-continue-metamask"
       className={preferReject ? 'btn btn-ghost' : 'btn btn-primary'}
       onClick={handleContinueClick}
-      disabled={isProcessing}
+      disabled={isProcessing || report.status === 'failed' || (!explicitReport && !analysis?.report)}
     >
-      {pending === 'continue' ? 'Opening MetaMask' : 'Continue to MetaMask'}
+      {pending === 'continue' ? 'Opening wallet' : 'Continue to wallet'}
       <span className="btn-icon">
         <Icon name="arrow" size={13} />
       </span>
@@ -239,7 +240,7 @@ export const RiskReport: React.FC<RiskReportProps> = ({
           <span className="count">{report.immediateChanges.length}</span>
         </div>
         {report.immediateChanges.length === 0 ? (
-          <p className="empty">No assets move and no permissions change when this executes.</p>
+          <p className="empty">No immediate changes observed within the available analysis coverage.</p>
         ) : (
           <ul className="ledger">
             {report.immediateChanges.map((change, idx) => (
@@ -252,6 +253,7 @@ export const RiskReport: React.FC<RiskReportProps> = ({
                   <span className="ledger-asset">{change.asset ?? 'Unknown asset'}</span>
                   {change.amount && <span className="ledger-amount">{change.amount}</span>}
                 </div>
+                <StateDiff change={change} report={report} />
                 {(change.from || change.to || change.spender) && (
                   <div className="ledger-parties">
                     {change.from && <span title={change.from}>from {formatAddress(change.from)}</span>}
@@ -265,6 +267,17 @@ export const RiskReport: React.FC<RiskReportProps> = ({
         )}
       </section>
 
+      {(report.conditionalChanges?.length ?? 0) > 0 && <section className="block" id="section-conditional-effects">
+        <div className="block-h"><h3 className="block-title">If this signature is used</h3></div>
+        <p className="empty">Conditional effects, assuming a valid authorization is submitted. Signing alone does not move these assets.</p>
+        <ul className="ledger">{report.conditionalChanges!.map((change, index) => <li className="ledger-row" key={index}>
+          <div className="ledger-head"><span className="tag tag--later">Conditional effect</span><span className="ledger-kind">{formatChangeType(change.type)}</span></div>
+          <div className="ledger-main"><span className="ledger-asset">{change.asset ?? change.token ?? 'Unknown asset'}</span><span className="ledger-amount">{change.amount}</span></div>
+          <StateDiff change={change} report={report} />
+          {(change.spender || change.operator) && <p className="mono">Spender {formatAddress(change.spender ?? change.operator)}</p>}
+        </li>)}</ul>
+      </section>}
+
       {/* 4. Potential exposure: what stays open for later */}
       <section className="block enter" id="section-potential-exposure" style={stagger(3)}>
         <div className="block-h">
@@ -274,7 +287,7 @@ export const RiskReport: React.FC<RiskReportProps> = ({
         {report.potentialExposure.length === 0 ? (
           <p className="empty">
             <Icon name="check" size={14} />
-            No potential exposures. Nothing stays open for later use.
+            No potential exposure observed within the available analysis coverage.
           </p>
         ) : (
           <ul className="ledger">
@@ -306,7 +319,7 @@ export const RiskReport: React.FC<RiskReportProps> = ({
         {report.findings.length === 0 ? (
           <p className="empty">
             <Icon name="check" size={14} />
-            No drain patterns or contract weaknesses detected.
+            No risk findings within the available analysis coverage.
           </p>
         ) : (
           <ul className="findings">
@@ -520,20 +533,6 @@ export const RiskReport: React.FC<RiskReportProps> = ({
             type="button"
             id="btn-detailed-analysis"
             className="btn btn-ghost"
-            style={{
-              width: '100%',
-              justifyContent: 'center',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '13px',
-              padding: '8px 12px',
-              border: '1px solid var(--line-2, #ccc)',
-              borderRadius: '6px',
-              background: 'var(--surface, #fff)',
-              cursor: 'pointer',
-              fontWeight: 500,
-            }}
             onClick={() => {
               const blob = new Blob([JSON.stringify({ request: snapshot, report }, null, 2)], { type: 'application/json' });
               const url = URL.createObjectURL(blob);
@@ -550,7 +549,7 @@ export const RiskReport: React.FC<RiskReportProps> = ({
         </div>
         <p className="footnote">
           {preferReject ? 'Rejecting is the safe choice for this request. ' : ''}
-          Reject safely cancels with error code 4001 without opening MetaMask.
+          Reject cancels the request before wallet confirmation.
         </p>
       </footer>
     </article>
@@ -565,18 +564,13 @@ function buildFallbackReport(snapshot: PendingRequestSnapshot, analysis?: Analys
   return {
     requestId: snapshot.requestId,
     requestHash: '0x' + '00'.repeat(32),
-    status: 'partial',
-    severity: (analysis?.severity?.toLowerCase() as ReportSeverity) || 'unknown',
-    summary: analysis?.summary || 'Pending risk report inspection.',
-    fork: {
-      chainId:
-        typeof snapshot.chainId === 'string' && snapshot.chainId.startsWith('0x') ? parseInt(snapshot.chainId, 16) : 1,
-      blockNumber: 'latest',
-      blockHash: '0x' + '00'.repeat(32),
-    },
+    status: 'failed',
+    severity: 'unknown',
+    summary: 'Analysis unavailable. No verified report was received.',
+    fork: null,
     simulation: {
-      mode: 'transaction',
-      outcome: 'success',
+      mode: 'unsupported',
+      outcome: 'not-executed',
       assumptions: [],
     },
     findings: (analysis?.findings || []).map((f) => ({

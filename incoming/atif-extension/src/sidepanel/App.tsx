@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   PendingRequestSnapshot,
   RequestStatus,
@@ -22,6 +22,8 @@ export const App: React.FC = () => {
   const [activeRequest, setActiveRequest] = useState<PendingRequestSnapshot | null>(null);
   const [status, setStatus] = useState<RequestStatus>('IDLE');
   const [statusError, setStatusError] = useState<string | undefined>();
+  const view = useRef<HTMLElement>(null);
+  useEffect(() => { view.current?.scrollTo(0, 0); }, [activeRequest?.requestId, status]);
 
   // Hydrate active request from service worker on mount
   useEffect(() => {
@@ -113,26 +115,25 @@ export const App: React.FC = () => {
             <Icon name="shield" size={16} />
           </span>
           <div>
-            <h1 className="brand-name">Cognitia®</h1>
-            <div className="brand-sub">Interceptor</div>
+            <h1 className="brand-name">Cognitia<sup>®</sup></h1>
+            <div className="brand-sub">Wallet protection</div>
           </div>
         </div>
         <div className="live" data-mode="live" role="status">
           <span className="live-dot" aria-hidden="true" />
-          Armed
+          {['INTERCEPTED', 'ANALYZING'].includes(status) ? 'Analyzing' : status === 'ANALYSIS_READY' ? 'Review' : 'Active'}
         </div>
       </header>
 
-      <main className="view">
+      <main className="view" ref={view}>
         {status === 'IDLE' && (
           <section className="idle enter">
             <span className="idle-mark">
               <Icon name="lock" size={20} />
             </span>
-            <h2>Listening for transactions</h2>
+            <h2>Know before<br />you sign.</h2>
             <p>
-              Signing requests are held in the page before MetaMask opens, simulated on a forked chain, and shown
-              here with their real effects.
+              Connect your wallet on a dapp, then make a request. Cognitia holds it, simulates its effects, and brings the risk report here before wallet confirmation.
             </p>
             <div className="tags">
               {SUPPORTED_METHODS.map((method) => (
@@ -143,7 +144,7 @@ export const App: React.FC = () => {
             </div>
             <details className="disclosure disclosure--inline">
               <summary>
-                <span>Prototype scope notice</span>
+                <span>What protection covers</span>
                 <Icon name="chevron" size={14} className="chev" />
               </summary>
               <p className="notice-text">{ARCHITECTURAL_LIMITATION_DISCLAIMER}</p>

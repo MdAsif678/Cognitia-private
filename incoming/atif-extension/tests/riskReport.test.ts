@@ -286,11 +286,11 @@ export async function runRiskReportTests(): Promise<TestResult[]> {
     assert(html.includes('Immediate effect'), 'Must render "Immediate effect" badge');
     assert(html.includes('Native ETH Transfer'), 'Must render Native ETH Transfer');
     assert(html.includes('0.05 ETH'), 'Must render transfer amount 0.05 ETH');
-    assert(html.includes('No potential exposures'), 'Must render empty potential exposure notice');
+    assert(html.includes('No potential exposure observed within'), 'Must qualify empty exposure results by analysis coverage');
     assert(html.includes('Fork Simulation Succeeded'), 'Must render fork simulation success');
     assert(html.includes('Reject'), 'Must render Reject button');
-    assert(html.includes('Continue to MetaMask'), 'Must render Continue to MetaMask button');
-    assert(html.includes('Reject safely cancels with error code 4001'), 'Must render safety guarantee');
+    assert(html.includes('Continue to wallet'), 'Must render Continue to wallet button');
+    assert(html.includes('Reject cancels the request before wallet confirmation'), 'Must explain rejection behavior');
   });
 
   // -------------------------------------------------------------
@@ -394,6 +394,15 @@ export async function runRiskReportTests(): Promise<TestResult[]> {
     assert(html.includes('fork simulation'), 'Must list missing check fork simulation');
     assert(html.includes('Unverified Contract Source Code'), 'Must render unverified finding title');
     assert(html.includes('does not imply malicious'), 'Must render objective notice without false malicious claims');
+  });
+
+  await test('Missing report never fabricates a successful fork or enables Continue', () => {
+    const html = renderToString(React.createElement(RiskReport, {
+      snapshot: benignTransferSnapshot, onContinue() {}, onReject() {},
+    }));
+    assert(html.includes('Analysis unavailable'), 'Missing report must be unknown');
+    assert(!html.includes('Fork Simulation Succeeded'), 'Must not fabricate fork execution');
+    assert(/id="btn-continue-metamask"[^>]*disabled/.test(html), 'No Continue without report');
   });
 
   return results;

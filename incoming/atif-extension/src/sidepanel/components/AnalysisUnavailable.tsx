@@ -92,7 +92,7 @@ export const AnalysisUnavailable: React.FC<AnalysisUnavailableProps> = ({
           onClick={handleContinue}
           disabled={!acknowledgedRisk || isProcessing}
         >
-          {pending === 'continue' ? 'Opening MetaMask' : 'Continue to MetaMask'}
+          {pending === 'continue' ? 'Opening wallet' : 'Continue to wallet'}
           <span className="btn-icon">
             <Icon name="arrow" size={13} />
           </span>

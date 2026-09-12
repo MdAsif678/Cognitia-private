@@ -15,7 +15,7 @@ cd ../..
 npm run dev:demo
 ```
 
-Open **http://localhost:3000**. This command starts a loopback-only chain (31337), deploys the test contracts, seeds three NFTs and the 500 pUSD stale allowance used by `claim()`, writes the actual deployment addresses, and starts the full analysis API on 8080. The demo starts in **read-only mode**, explicitly using Anvil's seeded account, without pretending that a wallet is connected. All seven scenarios and the faucet can be analyzed before any signing.
+Open **http://localhost:3000**. This command starts a loopback-only chain (31337), deploys the test contracts, seeds three NFTs and the 500 pUSD stale allowance used by `claim()`, writes the actual deployment addresses, and starts the full analysis API on 8080. AuraRewards is only the test dapp: it connects a wallet and sends ordinary wallet requests. It never calls the analysis API or renders risk reports. Install the Cognitia extension using the steps below to intercept and analyze those requests.
 
 If another project uses these ports:
 
@@ -30,13 +30,15 @@ The launcher refuses to reuse or reset an existing chain. Stop it with Ctrl-C. R
 ```sh
 # Set this to the actual API URL BEFORE building (8080 is the default).
 API_BASE_URL=http://localhost:8080 npm run build -w @cognitia/extension
+# Or use the API URL from your running demo deployment automatically:
+npm run build:demo-extension
 ```
 
-In Chrome, load `incoming/atif-extension/dist` unpacked from `chrome://extensions`, then reload the dapp. Select your wallet, click **Connect Wallet**, switch to Anvil, and turn off read-only analysis. Use a disposable Anvil account, never a funded real wallet. Anvil's first development account is `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`; its publicly known test key is in `scripts/deploy-local.ts`.
+In Chrome, load `incoming/atif-extension/dist` unpacked from `chrome://extensions`, then reload the dapp. After rebuilding, click Reload on the extension and reload the dapp again. Select your wallet, click **Connect Wallet**, switch to Anvil, and choose an offer. Use a disposable Anvil account, never a funded real wallet. Anvil's first development account is `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`; its publicly known test key is in `scripts/deploy-local.ts`. This seeded account is required to reproduce the hidden 500 pUSD drain; other accounts do not have that stale allowance.
 
-The dapp first shows its own live report. **Continue to wallet** then issues the request; the extension holds it again before the real provider sees it. Open the Cognitia toolbar side panel if Chrome does not open it automatically. Reject cancels with code 4001; Continue forwards the captured payload once. Transactions, ERC-2612 typed data and `personal_sign` are supported. Unsupported signing variants are blocked. Changing account or chain invalidates a pending review. Requests cannot overwrite an existing review. A disconnected wallet never becomes a mock wallet.
+The extension holds the dapp's request before the original wallet provider sees it. Its background worker calls the simulation API and displays the real report in the extension side panel. If Chrome blocks automatic side-panel opening, an extension-owned review window opens instead. **Reject** cancels with code 4001; **Continue to wallet** forwards the captured payload once. Transactions, ERC-2612 typed data and `personal_sign` are supported. Unsupported signing variants are blocked. Changing account or chain invalidates a pending review. Requests cannot overwrite an existing review. A disconnected wallet never becomes a mock wallet. Without the extension installed, this ordinary test dapp sends requests directly to the wallet.
 
-The extension's error screen retains an explicit “continue without analysis” acknowledgement; no failed analysis is presented as safe. Read-only dapp mode cannot sign, and the dapp does not offer Continue on failed analysis. Provider wrapping is an MVP boundary: direct RPC transports, pre-cached providers, legacy signing transports and other frames can bypass it. It is not a wallet-integrated security boundary.
+The extension's error screen retains an explicit “continue without analysis” acknowledgement; no failed analysis is presented as safe. Reports include immediate before/after state, conditional permit effects, exposure, findings and downloadable evidence. The extension and AuraRewards share `incoming/ps2-project/demo/theme.css`; extension fonts are bundled for offline rendering. The build grants host permission for the configured analysis API. Provider wrapping is an MVP boundary: direct RPC transports, pre-cached providers, legacy signing transports and other frames can bypass it. It is not a wallet-integrated security boundary.
 
 ## What is analyzed
 
@@ -76,6 +78,11 @@ npm run build
 npm run test:demo
 # Verify the bundled production API from an isolated folder, with the same chain:
 npm run test:packaged
+# Built MV3 extension + real API + non-signing wallet double in isolated Chromium:
+npx playwright install chromium
+npm run test:extension
+# For custom testbed ports:
+DEMO_WEB_URL=http://localhost:13000 npm run test:extension
 # Optional read-only live mainnet fork verification:
 npm run test:mainnet
 ```
