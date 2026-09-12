@@ -8,6 +8,13 @@ const webPort = process.env.DEMO_WEB_PORT ?? '3000';
 const rpcUrl = `http://127.0.0.1:${rpcPort}`;
 const apiUrl = `http://localhost:${apiPort}`;
 const env = { ...process.env, PATH: `${homedir()}/.foundry/bin${delimiter}${process.env.PATH}`, SIM_CHAINS: '31337', RPC_URL_31337: rpcUrl, DEMO_RPC_URL: rpcUrl, DEMO_API_URL: apiUrl, HOST: '127.0.0.1', PORT: apiPort, WARM_FORKS_PER_CHAIN: '0' };
+// Windows: npm is a .cmd shim, which Node refuses to spawn without a shell (CVE-2024-27980), and
+// `python3` there is usually the Microsoft Store alias that prints an install notice instead of
+// running. Only the npm calls need the shell; anvil and python are real executables.
+const isWindows = process.platform === 'win32';
+const npmCommand = isWindows ? 'npm.cmd' : 'npm';
+const npmOptions = isWindows ? { shell: true } : {};
+const pythonCommand = isWindows ? 'python' : 'python3';
 const children = [];
 let stopping = false;
 function stop(code = 0) { if (stopping) return; stopping = true; for (const child of children) child.kill('SIGTERM'); setTimeout(() => process.exit(code), 500); }
@@ -33,12 +40,12 @@ try {
   const chain = start('anvil', ['--host', '127.0.0.1', '--port', rpcPort, '--chain-id', '31337', '--silent']);
   chain.on('exit', code => { if (!stopping) stop(code || 1); });
   await untilReady(rpcUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_chainId', params: [] }) });
-  const deploy = start('npm', ['run', 'deploy:local']);
+  const deploy = start(npmCommand, ['run', 'deploy:local'], npmOptions);
   await new Promise((resolve, reject) => deploy.on('exit', code => code === 0 ? resolve() : reject(new Error('Demo deployment failed.'))));
-  const api = start('npm', ['run', 'dev:api']);
+  const api = start(npmCommand, ['run', 'dev:api'], npmOptions);
   api.on('exit', code => { if (!stopping) stop(code || 1); });
   await untilReady(`${apiUrl}/ready`);
-  const site = start('python3', ['-m', 'http.server', webPort, '--bind', '127.0.0.1', '--directory', 'incoming/ps2-project/demo']);
+  const site = start(pythonCommand, ['-m', 'http.server', webPort, '--bind', '127.0.0.1', '--directory', 'incoming/ps2-project/demo']);
   site.on('exit', code => { if (!stopping) stop(code || 1); });
   console.log(`\nCognitia ready: http://localhost:${webPort} · API ${apiUrl} · local chain 31337\n`);
 } catch (error) { console.error(error.message, '\nInstall Foundry and run the pinned forge install commands in README.md.'); stop(1); }
