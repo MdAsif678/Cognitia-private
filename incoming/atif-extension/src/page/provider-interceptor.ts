@@ -218,6 +218,31 @@ export class ProviderInterceptor {
         this.pendingRequests.set(requestId, record);
         logger.pendingRequest(`[Pending Request] Created pending record [requestId: ${requestId}] in state PENDING.`);
 
+        // Best-effort fallback to provider's synchronous properties or tx params if dApp has not queried them yet
+        let effectiveChainId = this.lastKnownChainId;
+        if (!effectiveChainId) {
+          const pChainId = (originalProvider as unknown as { chainId?: unknown })?.chainId;
+          if (typeof pChainId === 'string' && /^(0x[0-9a-fA-F]+|\d+)$/.test(pChainId)) {
+            effectiveChainId = pChainId;
+            this.lastKnownChainId = pChainId;
+          } else if (rawParamsCopy[0] && typeof rawParamsCopy[0] === 'object' && 'chainId' in (rawParamsCopy[0] as Record<string, unknown>)) {
+            effectiveChainId = String((rawParamsCopy[0] as Record<string, unknown>).chainId);
+          }
+        }
+
+        let effectiveAccount = this.lastKnownAccounts.length > 0 ? this.lastKnownAccounts[0] : undefined;
+        if (!effectiveAccount) {
+          const pSelected = (originalProvider as unknown as { selectedAddress?: unknown })?.selectedAddress;
+          if (typeof pSelected === 'string' && /^0x[0-9a-fA-F]{40}$/i.test(pSelected)) {
+            effectiveAccount = pSelected;
+          } else if (rawParamsCopy[0] && typeof rawParamsCopy[0] === 'object') {
+            const candidate = (rawParamsCopy[0] as Record<string, unknown>).from;
+            if (typeof candidate === 'string' && /^0x[0-9a-fA-F]{40}$/i.test(candidate)) {
+              effectiveAccount = candidate;
+            }
+          }
+        }
+
         // Notify extension bridge of intercepted request with strict PAGE -> EXTENSION protocol,
         // including best-effort current chain/account context (captured passively from the
         // dApp's own eth_chainId / eth_accounts / eth_requestAccounts calls — never fetched here)
@@ -230,8 +255,8 @@ export class ProviderInterceptor {
           params: Object.freeze(rawParamsCopy),
           providerId: info.uuid ?? info.name,
           origin: window.location.origin,
-          chainId: this.lastKnownChainId,
-          account: this.lastKnownAccounts.length > 0 ? this.lastKnownAccounts[0] : undefined,
+          chainId: effectiveChainId,
+          account: effectiveAccount,
         };
 
         this.postToBridge(message);

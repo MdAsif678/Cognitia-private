@@ -57,6 +57,7 @@ async function connectWallet() {
 
   if (window.ethereum) {
     try {
+      await window.ethereum.request({ method: "eth_chainId" }).catch(() => {});
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       if (Array.isArray(accounts) && accounts.length > 0) {
         userAccount = accounts[0];
@@ -109,6 +110,7 @@ async function sendTx(to, data, value = "0x0") {
 
   if (window.ethereum) {
     try {
+      await window.ethereum.request({ method: "eth_chainId" }).catch(() => {});
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       if (Array.isArray(accounts) && accounts.length > 0) {
         activeAccount = accounts[0];
@@ -120,7 +122,8 @@ async function sendTx(to, data, value = "0x0") {
   const txParams = {
     to: to,
     data: data,
-    value: value
+    value: value,
+    chainId: CONFIG.chainHex
   };
 
   if (activeAccount) {
