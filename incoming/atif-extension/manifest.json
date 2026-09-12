@@ -3,6 +3,7 @@
   "name": "Pre-Execution Transaction Interceptor & Simulator",
   "version": "0.1.0",
   "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
+  "optional_host_permissions": ["https://*/*", "http://localhost/*", "http://127.0.0.1/*"],
   "description": "Pre-Execution Transaction Interceptor & Malicious Signature Simulator (Hackathon Prototype)",
   "permissions": [
     "sidePanel",

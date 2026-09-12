@@ -58,6 +58,14 @@ export class ForkPool {
     }
   }
 
+  /** Stop keeping `target` warm and discard its idle forks (its upstream is failing). */
+  dropWarm(target: ForkTarget) {
+    const key = warmKey(target);
+    this.warmTargets.delete(key);
+    for (const w of this.idle.get(key) ?? []) w.instance.stop();
+    this.idle.delete(key);
+  }
+
   async withFork<T>(target: ForkTarget, fn: (instance: AnvilInstance) => Promise<T>, signal?: AbortSignal): Promise<T> {
     if (this.closed) throw new SimulationError("FORK_FAILED", "fork pool is closed");
     await this.acquire(signal);

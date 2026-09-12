@@ -2,6 +2,7 @@ export const SIMULATOR_VERSION = "0.1.0";
 export { Simulator } from "./simulator";
 export type { ChainConfig, SimulatorOptions, SimulateTransactionInput, SimulateConditionalInput } from "./simulator";
 export { chainsFromEnv } from "./chains";
+export { UpstreamRotation, upstreamsOf, upstreamLabel, parseUpstreamList, isUpstreamFailure } from "./upstreams";
 export { SimulationError, type SimulationErrorCode } from "./errors";
 export { resolveAnvilPath, spawnAnvilFork, type AnvilInstance } from "./anvil";
 export { decodeTokenCall, type CallHint } from "./calldata";

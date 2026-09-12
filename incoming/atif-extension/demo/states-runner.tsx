@@ -12,6 +12,7 @@ import { Rejected } from '../src/sidepanel/components/Rejected';
 import { Failed } from '../src/sidepanel/components/Failed';
 import { StaleReport } from '../src/sidepanel/components/StaleReport';
 import { AnalysisUnavailable } from '../src/sidepanel/components/AnalysisUnavailable';
+import { EndpointSettings } from '../src/sidepanel/components/EndpointSettings';
 import '../src/sidepanel/styles.css';
 
 const noop = () => undefined;
@@ -35,6 +36,7 @@ const STATES: { name: string; node: React.ReactNode }[] = [
     name: 'REJECTED',
     node: <Rejected snapshot={benignTransferSnapshot} reason="User rejected request" onReset={noop} />,
   },
+  { name: 'ENDPOINT_SETTINGS', node: <EndpointSettings /> },
   {
     name: 'FAILED',
     node: (

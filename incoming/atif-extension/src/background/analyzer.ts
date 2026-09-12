@@ -178,10 +178,25 @@ export function coarseRiskScore(report: AnalysisReport): number {
  * invalidated due to an account/chain change (see invalidateAnalysis).
  */
 export class TransactionAnalyzer {
-  private readonly client: AnalyzeApiClient;
+  private client: AnalyzeApiClient;
+  private baseUrl: string;
+  private readonly timeoutMs: number;
 
   constructor(baseUrl: string = API_CONFIG.BASE_URL, timeoutMs: number = API_CONFIG.TIMEOUT_MS) {
+    this.baseUrl = baseUrl;
+    this.timeoutMs = timeoutMs;
     this.client = new AnalyzeApiClient({ baseUrl, timeoutMs });
+  }
+
+  /**
+   * Repoints the analyzer at a different backend (see shared/apiEndpoint).
+   * Replacing the client also drops its per-requestId analysis cache, which is required:
+   * a report produced by the previous endpoint must not be reused for the new one.
+   */
+  public setBaseUrl(baseUrl: string): void {
+    if (baseUrl === this.baseUrl) return;
+    this.baseUrl = baseUrl;
+    this.client = new AnalyzeApiClient({ baseUrl, timeoutMs: this.timeoutMs });
   }
 
   public getEndpointUrl(): string {

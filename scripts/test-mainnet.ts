@@ -1,11 +1,12 @@
 /** Read-only live-mainnet evidence. No private key and no upstream send RPC. */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { encodeFunctionData, parseAbi, maxUint256 } from 'viem';
-import { Simulator } from '@cognitia/simulator';
+import { chainsFromEnv, Simulator } from '@cognitia/simulator';
 import { analyze } from '../services/api/src/pipeline/analyze';
 import { createSwastikEngine } from '../incoming/integration/swastik-bridge';
 import { parseAnalysisReport } from '../incoming/atif-extension/src/shared/api-contract';
-const chains = [{ chainId: 1, name: 'Ethereum mainnet', rpcUrl: process.env.RPC_URL_1 ?? 'https://ethereum-rpc.publicnode.com', blockLag: 2 }];
+// Keyless public upstreams with fallbacks, or whatever RPC_URL_1 configures.
+const chains = chainsFromEnv({ ...process.env, SIM_CHAINS: '1' }).map(c => ({ ...c, name: 'Ethereum mainnet' }));
 const simulator = new Simulator({ chains, warmForksPerChain: 0 });
 try {
   const account = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045';

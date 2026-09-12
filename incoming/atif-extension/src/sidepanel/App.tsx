@@ -15,6 +15,7 @@ import { Rejected } from './components/Rejected';
 import { Forwarding } from './components/Forwarding';
 import { Failed } from './components/Failed';
 import { LogView } from './components/LogView';
+import { EndpointSettings } from './components/EndpointSettings';
 import './styles.css';
 
 const SUPPORTED_METHODS = ['eth_sendTransaction', 'eth_signTypedData_v4', 'personal_sign'];
@@ -27,6 +28,8 @@ export const App: React.FC = () => {
   useEffect(() => { view.current?.scrollTo(0, 0); }, [activeRequest?.requestId, status]);
   // The log replaces the live view in place; the interception flow underneath is untouched.
   const [showLog, setShowLog] = useState(false);
+  // Endpoint settings replace the view the same way the log does, so the two are mutually exclusive.
+  const [showEndpoint, setShowEndpoint] = useState(false);
   // Hydrate active request from service worker on mount
   useEffect(() => {
     const fetchActive = async () => {
@@ -131,18 +134,30 @@ export const App: React.FC = () => {
             className="log-toggle"
             aria-pressed={showLog}
             aria-label={showLog ? 'Close the request log' : 'Open the request log'}
-            onClick={() => setShowLog((open) => !open)}
+            onClick={() => { setShowLog((open) => !open); setShowEndpoint(false); }}
           >
             <Icon name={showLog ? 'x' : 'list'} size={13} />
             <span>Log</span>
+          </button>
+          <button
+            type="button"
+            className="log-toggle"
+            aria-pressed={showEndpoint}
+            aria-label={showEndpoint ? 'Close the analysis endpoint settings' : 'Open the analysis endpoint settings'}
+            onClick={() => { setShowEndpoint((open) => !open); setShowLog(false); }}
+          >
+            <Icon name={showEndpoint ? 'x' : 'shield'} size={13} />
+            <span>API</span>
           </button>
         </div>
       </header>
 
       <main className="view" ref={view}>
-        {showLog && <LogView />}
+        {showEndpoint && <EndpointSettings />}
 
-        {!showLog && status === 'IDLE' && (
+        {showLog && !showEndpoint && <LogView />}
+
+        {!showLog && !showEndpoint && status === 'IDLE' && (
           <section className="idle enter">
             <span className="idle-mark">
               <Icon name="lock" size={20} />
@@ -168,11 +183,11 @@ export const App: React.FC = () => {
           </section>
         )}
 
-        {!showLog && (status === 'INTERCEPTED' || status === 'ANALYZING') && (
+        {!showLog && !showEndpoint && (status === 'INTERCEPTED' || status === 'ANALYZING') && (
           <Loading snapshot={activeRequest} />
         )}
 
-        {!showLog && status === 'ANALYSIS_READY' && activeRequest && (
+        {!showLog && !showEndpoint && status === 'ANALYSIS_READY' && activeRequest && (
           <RiskReport
             key={activeRequest.requestId}
             snapshot={activeRequest}
@@ -183,7 +198,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {!showLog && status === 'ANALYSIS_UNAVAILABLE' && (
+        {!showLog && !showEndpoint && status === 'ANALYSIS_UNAVAILABLE' && (
           <AnalysisUnavailable
             snapshot={activeRequest}
             errorMessage={statusError}
@@ -192,19 +207,19 @@ export const App: React.FC = () => {
           />
         )}
 
-        {!showLog && status === 'STALE' && (
+        {!showLog && !showEndpoint && status === 'STALE' && (
           <StaleReport snapshot={activeRequest} onReject={handleReject} onReset={handleReset} />
         )}
 
-        {!showLog && status === 'REJECTED' && (
+        {!showLog && !showEndpoint && status === 'REJECTED' && (
           <Rejected snapshot={activeRequest} reason={statusError} onReset={handleReset} />
         )}
 
-        {!showLog && (status === 'FORWARDING' || status === 'COMPLETED') && (
+        {!showLog && !showEndpoint && (status === 'FORWARDING' || status === 'COMPLETED') && (
           <Forwarding snapshot={activeRequest} />
         )}
 
-        {!showLog && status === 'FAILED' && (
+        {!showLog && !showEndpoint && status === 'FAILED' && (
           <Failed snapshot={activeRequest} error={statusError} onReset={handleReset} />
         )}
       </main>

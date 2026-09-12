@@ -22,7 +22,8 @@
     "test:mainnet": "tsx scripts/test-mainnet.ts",
     "build:demo-extension": "node scripts/build-demo-extension.mjs",
     "test:extension": "npm run build:demo-extension && node scripts/test-extension.mjs",
-    "fund:local": "tsx scripts/fund-local.ts"
+    "fund:local": "tsx scripts/fund-local.ts",
+    "demo:public": "node scripts/public-demo.mjs"
   },
   "engines": {
     "node": ">=22"

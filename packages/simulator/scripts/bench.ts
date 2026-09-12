@@ -2,7 +2,7 @@
 //   npx tsx scripts/bench.ts [--runs 3] [--warm 1] [--no-follow] [-- extra anvil args]
 import { parseArgs } from "node:util";
 import { encodeFunctionData, maxUint256, parseAbi } from "viem";
-import { Simulator } from "../src";
+import { chainsFromEnv, Simulator } from "../src";
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -10,7 +10,7 @@ const { values, positionals } = parseArgs({
 });
 
 const sim = new Simulator({
-  chains: [{ chainId: 1, name: "Ethereum Mainnet", rpcUrl: process.env.RPC_URL_1 ?? "https://ethereum-rpc.publicnode.com", blockLag: 2 }],
+  chains: chainsFromEnv({ ...process.env, SIM_CHAINS: "1" }),
   anvilExtraArgs: positionals,
   simulateFollowUps: !values["no-follow"],
   warmForksPerChain: Number(values.warm),

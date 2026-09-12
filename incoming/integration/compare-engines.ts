@@ -5,7 +5,7 @@
  */
 import { encodeFunctionData, getAddress, maxUint256, parseAbi, parseEther, type Address, type Hex } from "viem";
 import type { AnalysisReport, AnalyzeRequest } from "@cognitia/shared";
-import { Simulator } from "@cognitia/simulator";
+import { chainsFromEnv, Simulator } from "@cognitia/simulator";
 import { baselineEngine } from "../../services/api/src/engine";
 import { analyze } from "../../services/api/src/pipeline/analyze";
 import { createSwastikEngine } from "./swastik-bridge";
@@ -44,7 +44,8 @@ const scenarios: [string, AnalyzeRequest][] = [
 
 const chains = [
   { chainId: LOCAL, name: "Local demo chain", rpcUrl: "http://127.0.0.1:8545", blockLag: 0 },
-  { chainId: 1, name: "Ethereum Mainnet", rpcUrl: process.env.RPC_URL_1 ?? "https://ethereum-rpc.publicnode.com", blockLag: 2 },
+  // Keyless public upstreams with fallbacks, or whatever RPC_URL_1 configures.
+  ...chainsFromEnv({ ...process.env, SIM_CHAINS: "1" }),
 ];
 const simulator = new Simulator({ chains });
 const engines = { baseline: baselineEngine, swastik: createSwastikEngine({ chains }) };

@@ -1,4 +1,6 @@
-# Cognitia — PS2 MVP
+# Cognitia — Code-Blooded
+
+### Pre-Execution Transaction Interceptor & Malicious Signature Simulator
 
 Cognitia holds an unsigned EVM transaction or signature request, simulates its effect on an isolated Anvil fork, and shows a severity-ranked report before forwarding to the wallet. Nothing is sent to the upstream chain during analysis.
 
@@ -58,11 +60,11 @@ The root API now combines the original simulator, baseline rules and teammate ri
 
 ```sh
 cp services/api/.env.example services/api/.env
-# Set SIM_CHAINS=1,11155111 and your RPC_URL_1 / RPC_URL_11155111.
+# Set SIM_CHAINS=1,11155111. No RPC configuration is required.
 npm run dev:api
 ```
 
-Environment files are loaded by the server. Private RPC URLs improve reliability over public endpoints. `GET /health` checks the process; `GET /ready` checks configured upstream chain identity/readiness. `POST /v1/analyze` accepts the exact wallet method/params with `requestId`, `origin`, numeric `chainId`, and `account`. `POST /v1/replay` accepts `{ "chainId": 1, "txHash": "0x…" }`, then replays against the end of the preceding block; earlier transactions in the same block are not applied. Historical replays need archive RPC access.
+Environment files are loaded by the server. **No RPC provider account or API key is needed.** Chains 1 and 11155111 default to keyless public endpoints, each with fallbacks: an endpoint that rate-limits or goes down is parked for a minute and the next one in the list is used, so a public RPC throttling mid-demo degrades latency instead of failing the report. `RPC_URL_<chainId>` replaces a chain's whole list, highest preference first, so a keyed endpoint can sit in front of a public backup: `RPC_URL_1=https://my-keyed-endpoint,https://ethereum-rpc.publicnode.com`. Only fork acquisition rotates; once an analysis is running its reads stay bound to the fork it started on. `/ready` reports the host that answered and how many endpoints are configured, never the full URL, which may carry a key. `GET /health` checks the process; `GET /ready` checks configured upstream chain identity/readiness. `POST /v1/analyze` accepts the exact wallet method/params with `requestId`, `origin`, numeric `chainId`, and `account`. `POST /v1/replay` accepts `{ "chainId": 1, "txHash": "0x…" }`, then replays against the end of the preceding block; earlier transactions in the same block are not applied. Historical replays need archive RPC access.
 
 The API budget is 45 seconds; the extension waits 55 seconds. Network failures report the endpoint and a recovery instruction, never fabricated fork data. Configure an optional `THREAT_DB_FILE` containing a JSON array of `ThreatRecord` objects to add independently sourced indicators. Demo indicators require `THREAT_INCLUDE_DEMO=true`; keep that off in production.
 
@@ -97,7 +99,7 @@ The active workflows are at the repository root in `.github/workflows`; workflow
 - **Deploy analysis API**: runs checks, publishes a private GHCR image, deploys to a Docker VM through verified SSH, and checks `/ready` over HTTPS.
 - **Deploy demo contracts to Sepolia**: manual testnet-only deployment with a chain-ID check and downloadable deployment receipts. The local bait dapp intentionally remains restricted to chain 31337.
 
-For API deployment, point an API hostname to your VM, install Docker/Compose, and create `/opt/cognitia` owned by the deployment user. Copy `deploy/.env.example` to `/opt/cognitia/.env` and configure its domain and RPCs. Set repository variable `ANALYSIS_API_URL` to `https://your-api-host`. Configure the `production` environment secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, and `DEPLOY_KNOWN_HOSTS` (verified host key, not a runtime trust-on-first-use scan). The deployment user must be able to run Docker. Run **Deploy analysis API** manually. Caddy terminates HTTPS; Anvil forks and the API port are not publicly exposed. The extension artifact is built with the configured API URL. Public deployments should restrict origins and add authenticated access if serving beyond a controlled demo.
+For API deployment, run `deploy/bootstrap.sh <api-hostname>` on the VM as the deployment user. It installs Docker, creates `/opt/cognitia` owned by that user, and writes a keyless `/opt/cognitia/.env` (an existing one is left alone); `deploy/.env.example` documents the same settings if you would rather write it by hand. Point an A record for the hostname at the VM and open ports 80 and 443 — Caddy needs port 80 to obtain its certificate. Set repository variable `ANALYSIS_API_URL` to `https://your-api-host`. Configure the `production` environment secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, and `DEPLOY_KNOWN_HOSTS` (verified host key, not a runtime trust-on-first-use scan). The deployment user must be able to run Docker. Run **Deploy analysis API** manually. Caddy terminates HTTPS; Anvil forks and the API port are not publicly exposed. The extension artifact is built with the configured API URL. Public deployments should restrict origins and add authenticated access if serving beyond a controlled demo.
 
 For Sepolia, configure environment secrets `SEPOLIA_RPC_URL` and `SEPOLIA_DEPLOYER_KEY` using a dedicated testnet-only account with test ETH. No deployment credentials are stored in this repository. Workflows are supplied for deployment; local verification does not imply a production or Sepolia deployment has run.
 

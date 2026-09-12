@@ -447,3 +447,23 @@ details.block-disclosure > summary:focus-visible { outline-offset: -2px; border-
   .topbar-end { gap: 8px; }
   .log-toggle { padding: 7px 9px; }
 }
+
+/* --- Analysis endpoint settings -------------------------------------------
+   Reuses the screen rhythm: hairline-separated rows, mono for anything the
+   user might copy, no boxes beyond the existing callout. */
+.endpoint { gap: 14px; }
+.endpoint-title { font: 800 22px/1.15 var(--display); letter-spacing: -0.02em; margin: 0; color: var(--ink); }
+.endpoint-title::after { content: '.'; color: var(--ink); }
+.endpoint-current { display: block; font: 400 12px/1.5 var(--mono); color: var(--ink); word-break: break-all; }
+.endpoint-label {
+  display: block; margin: 4px 0 6px;
+  font: 500 10.5px/1.4 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.endpoint-input {
+  width: 100%; box-sizing: border-box; padding: 10px 12px;
+  font: 400 13px/1.4 var(--mono); color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px;
+}
+.endpoint-input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-color: var(--ink); }
+.endpoint-input[disabled] { opacity: 0.55; cursor: not-allowed; }
+.endpoint form { display: flex; flex-direction: column; gap: 12px; }

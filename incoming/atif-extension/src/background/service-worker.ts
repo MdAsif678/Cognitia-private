@@ -14,6 +14,7 @@ import {
 } from '../shared/types';
 import { APPLICATION_NAMESPACE } from '../shared/constants';
 import { appendLog } from '../shared/logStore';
+import { getEffectiveApiBaseUrl, onApiBaseUrlChanged } from '../shared/apiEndpoint';
 
 /**
  * Extension Background Service Worker (MV3).
@@ -28,12 +29,29 @@ class BackgroundCoordinator {
   private pendingManager: PendingRequestManager;
   private analyzer: TransactionAnalyzer;
   private activeTabId: number | null = null;
+  /**
+   * Resolves once the stored endpoint override has been applied. Awaited before every analysis so
+   * a request intercepted immediately after a service-worker restart still uses the override
+   * rather than the stale build-time URL.
+   */
+  private endpointReady: Promise<void>;
 
   constructor() {
     this.pendingManager = new PendingRequestManager();
     this.analyzer = new TransactionAnalyzer();
+    this.endpointReady = this.applyStoredEndpoint();
+    onApiBaseUrlChanged((url) => this.analyzer.setBaseUrl(url));
     this.initializeSidePanel();
     this.setupMessageListeners();
+  }
+
+  /** Points the analyzer at the stored override, if any. Failure leaves the build-time URL in place. */
+  private async applyStoredEndpoint(): Promise<void> {
+    try {
+      this.analyzer.setBaseUrl(await getEffectiveApiBaseUrl());
+    } catch (err) {
+      console.warn('[ServiceWorker] Could not read the stored API endpoint:', err);
+    }
   }
 
   /**
@@ -207,6 +225,7 @@ class BackgroundCoordinator {
     });
 
     // 4. Dispatch to /v1/analyze backend via the real shared API contract
+    await this.endpointReady;
     const outcome = await this.analyzer.analyze(snapshot);
 
     if (outcome.kind === 'unavailable') {

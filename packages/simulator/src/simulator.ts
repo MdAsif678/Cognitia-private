@@ -1,4 +1,4 @@
-import { createPublicClient, hexToBigInt, http, type Address, type Hex, type PublicClient } from "viem";
+import { createPublicClient, fallback, hexToBigInt, http, type Address, type Hex, type PublicClient } from "viem";
 import type {
   ConditionalAuthorization,
   ConditionalScenario,
@@ -22,6 +22,7 @@ import { describeProbe, probeKey } from "./probes";
 import { ForkRpc } from "./rpc";
 import { runScenario, type ScenarioResult, type StepExecution, type StepSpec } from "./scenario";
 import { enumerateOwnedTokenIds, holdingsFromLogs } from "./tokens";
+import { isUpstreamFailure, UpstreamRotation, upstreamLabel, upstreamsOf } from "./upstreams";
 import { addr, errorMessage, isUnlimitedAmount, minBigInt, short } from "./util";
 
 export type ChainConfig = {
@@ -29,6 +30,11 @@ export type ChainConfig = {
   name: string;
   /** Upstream RPC the fork reads state from. Never used to send transactions. */
   rpcUrl: string;
+  /**
+   * Further upstreams for the same chain, tried in order when `rpcUrl` is rate-limited or down.
+   * Keyless public endpoints make this the difference between a slow demo and a failed one.
+   */
+  fallbackRpcUrls?: string[];
   /** Fork this many blocks behind the head, so the block is settled and state is served. */
   blockLag?: number;
   /** Seconds between blocks; simulated blocks are timestamped fork block + n × blockTime. */
@@ -41,6 +47,8 @@ export type SimulatorOptions = {
   maxConcurrentForks?: number;
   maxQueuedForks?: number;
   forkStartupTimeoutMs?: number;
+  /** How long a failing upstream is skipped before it is tried again. */
+  upstreamCooldownMs?: number;
   readConcurrency?: number;
   /** After a request grants authority, also simulate the spender using it (conditional). */
   simulateFollowUps?: boolean;
@@ -90,6 +98,7 @@ const MAX_GAS = 50_000_000n;
 
 export class Simulator {
   private readonly chains = new Map<number, ChainConfig>();
+  private readonly rotations = new Map<number, UpstreamRotation>();
   private readonly upstream = new Map<number, PublicClient>();
   private readonly pool: ForkPool;
   private readonly readConcurrency: number;
@@ -99,7 +108,10 @@ export class Simulator {
 
   constructor(opts: SimulatorOptions) {
     this.ownershipScanBlocks = BigInt(opts.ownershipScanBlocks ?? 100_000);
-    for (const c of opts.chains) this.chains.set(c.chainId, c);
+    for (const c of opts.chains) {
+      this.chains.set(c.chainId, c);
+      this.rotations.set(c.chainId, new UpstreamRotation(upstreamsOf(c), opts.upstreamCooldownMs));
+    }
     this.pool = new ForkPool({
       anvilPath: resolveAnvilPath(opts.anvilPath),
       maxConcurrent: opts.maxConcurrentForks ?? 4,
@@ -130,7 +142,9 @@ export class Simulator {
 
   /** Start warm forks for every configured chain (no-op unless warmForksPerChain > 0). */
   prewarm() {
-    for (const chain of this.chains.values()) this.pool.keepWarm({ forkUrl: chain.rpcUrl, forkBlock: { behindHead: chain.blockLag ?? 2 } });
+    for (const chain of this.chains.values()) {
+      this.pool.keepWarm({ forkUrl: this.rotation(chain.chainId).current(), forkBlock: { behindHead: chain.blockLag ?? 2 } });
+    }
   }
 
   async close() {
@@ -183,25 +197,48 @@ export class Simulator {
     return chain;
   }
 
+  private rotation(chainId: number): UpstreamRotation {
+    const rotation = this.rotations.get(chainId);
+    if (!rotation) throw new SimulationError("UNSUPPORTED_CHAIN", `chain ${chainId} is not configured for simulation`);
+    return rotation;
+  }
+
+  /**
+   * Direct reads (block verification, priority fee, log scans) go through viem's fallback
+   * transport, so these rotate per request rather than per fork.
+   */
   private upstreamClient(chain: ChainConfig): PublicClient {
     let client = this.upstream.get(chain.chainId);
     if (!client) {
-      client = createPublicClient({ transport: http(chain.rpcUrl, { timeout: 15_000, retryCount: 2 }) });
+      const transports = this.rotation(chain.chainId).endpoints.map((url) => http(url, { timeout: 15_000, retryCount: 2 }));
+      client = createPublicClient({ transport: transports.length > 1 ? fallback(transports) : transports[0]! });
       this.upstream.set(chain.chainId, client);
     }
     return client;
   }
 
-  /** Checks the upstream RPC is reachable and serves this chain. */
-  async checkUpstream(chainId: number): Promise<{ ok: boolean; head?: string; error?: string }> {
-    try {
-      const client = this.upstreamClient(this.chain(chainId));
-      const [id, head] = await Promise.all([client.getChainId(), client.getBlockNumber({ cacheTime: 0 })]);
-      if (id !== chainId) return { ok: false, error: `upstream reports chain ${id}` };
-      return { ok: true, head: head.toString() };
-    } catch (err) {
-      return { ok: false, error: errorMessage(err) };
+  /**
+   * Checks that at least one configured upstream is reachable and serves this chain, trying them
+   * in rotation order and parking the ones that fail. Only the host is reported, never the full
+   * URL, which may carry an API key.
+   */
+  async checkUpstream(chainId: number): Promise<{ ok: boolean; head?: string; endpoint?: string; endpoints: number; error?: string }> {
+    const rotation = this.rotation(chainId);
+    const endpoints = rotation.endpoints.length;
+    const failures: string[] = [];
+    for (const url of rotation.order()) {
+      try {
+        const client = createPublicClient({ transport: http(url, { timeout: 10_000, retryCount: 0 }) });
+        const [id, head] = await Promise.all([client.getChainId(), client.getBlockNumber({ cacheTime: 0 })]);
+        if (id !== chainId) throw new Error(`serves chain ${id}`);
+        rotation.clear(url);
+        return { ok: true, head: head.toString(), endpoint: upstreamLabel(url), endpoints };
+      } catch (err) {
+        rotation.park(url);
+        failures.push(`${upstreamLabel(url)}: ${errorMessage(err)}`);
+      }
     }
+    return { ok: false, endpoints, error: failures.join("; ") };
   }
 
   /**
@@ -215,51 +252,73 @@ export class Simulator {
     fn: (ctx: ForkContext) => Promise<T>,
   ): Promise<T> {
     const chain = this.chain(chainId);
+    const rotation = this.rotation(chainId);
     const relative: ForkBlock = { behindHead: chain.blockLag ?? 2 };
-    this.pool.keepWarm({ forkUrl: chain.rpcUrl, forkBlock: relative });
-    const requested = Date.now();
-    const target = { forkUrl: chain.rpcUrl, forkBlock: blockNumber !== undefined ? { number: blockNumber } : relative };
+    const forkBlock: ForkBlock = blockNumber !== undefined ? { number: blockNumber } : relative;
+    const attempts = rotation.order();
+    const failures: string[] = [];
 
-    return this.pool.withFork(
-      target,
-      async (instance) => {
-        const timings: Record<string, number> = { forkStart: Date.now() - requested };
-        const rpc = new ForkRpc(instance.rpcUrl);
-        const [forkChainId, raw] = await Promise.all([
-          rpc.client.getChainId(),
-          rpc.request<RawBlock>("eth_getBlockByNumber", ["latest", false]),
-        ]);
-        if (forkChainId !== chain.chainId) {
-          throw new SimulationError("CHAIN_MISMATCH", `upstream for ${chain.name} serves chain ${forkChainId}, expected ${chain.chainId}`);
+    for (const [index, endpoint] of attempts.entries()) {
+      // Only fork acquisition rotates. Once the analysis is running its reads are bound to this
+      // fork, so restarting it on another upstream would blow the request budget instead.
+      let handedOff = false;
+      this.pool.keepWarm({ forkUrl: endpoint, forkBlock: relative });
+      const requested = Date.now();
+      try {
+        return await this.pool.withFork(
+          { forkUrl: endpoint, forkBlock },
+          async (instance) => {
+            const timings: Record<string, number> = { forkStart: Date.now() - requested };
+            const rpc = new ForkRpc(instance.rpcUrl);
+            const [forkChainId, raw] = await Promise.all([
+              rpc.client.getChainId(),
+              rpc.request<RawBlock>("eth_getBlockByNumber", ["latest", false]),
+            ]);
+            if (forkChainId !== chain.chainId) {
+              throw new SimulationError("CHAIN_MISMATCH", `upstream for ${chain.name} serves chain ${forkChainId}, expected ${chain.chainId}`);
+            }
+            const block: PinnedBlock = {
+              number: hexToBigInt(raw.number),
+              hash: raw.hash,
+              timestamp: hexToBigInt(raw.timestamp),
+              baseFeePerGas: raw.baseFeePerGas ? hexToBigInt(raw.baseFeePerGas) : undefined,
+              gasLimit: hexToBigInt(raw.gasLimit),
+            };
+            const verification = this.upstreamClient(chain)
+              .getBlock({ blockNumber: block.number })
+              .then((b) => b.hash?.toLowerCase() === block.hash.toLowerCase())
+              .catch(() => false);
+            const priorityFee = this.upstreamClient(chain)
+              .estimateMaxPriorityFeePerGas()
+              .catch(() => undefined);
+            timings.pinBlock = Date.now() - requested - timings.forkStart!;
+            const bt = this.blockTime(chain);
+            rotation.clear(endpoint);
+            handedOff = true;
+            return fn({
+              chain,
+              rpc,
+              block,
+              verification,
+              priorityFee,
+              timings,
+              blockTimestamp: (i) => stepTimestamp(block.timestamp, i, bt),
+            });
+          },
+          signal,
+        );
+      } catch (err) {
+        if (handedOff || !isUpstreamFailure(err)) throw err;
+        rotation.park(endpoint);
+        this.pool.dropWarm({ forkUrl: endpoint, forkBlock: relative });
+        failures.push(`${upstreamLabel(endpoint)}: ${errorMessage(err)}`);
+        if (index === attempts.length - 1) {
+          if (failures.length === 1) throw err;
+          throw new SimulationError("UPSTREAM_UNAVAILABLE", `every upstream for ${chain.name} failed — ${failures.join("; ")}`);
         }
-        const block: PinnedBlock = {
-          number: hexToBigInt(raw.number),
-          hash: raw.hash,
-          timestamp: hexToBigInt(raw.timestamp),
-          baseFeePerGas: raw.baseFeePerGas ? hexToBigInt(raw.baseFeePerGas) : undefined,
-          gasLimit: hexToBigInt(raw.gasLimit),
-        };
-        const verification = this.upstreamClient(chain)
-          .getBlock({ blockNumber: block.number })
-          .then((b) => b.hash?.toLowerCase() === block.hash.toLowerCase())
-          .catch(() => false);
-        const priorityFee = this.upstreamClient(chain)
-          .estimateMaxPriorityFeePerGas()
-          .catch(() => undefined);
-        timings.pinBlock = Date.now() - requested - timings.forkStart!;
-        const bt = this.blockTime(chain);
-        return fn({
-          chain,
-          rpc,
-          block,
-          verification,
-          priorityFee,
-          timings,
-          blockTimestamp: (i) => stepTimestamp(block.timestamp, i, bt),
-        });
-      },
-      signal,
-    );
+      }
+    }
+    throw new SimulationError("UPSTREAM_UNAVAILABLE", `no upstream is configured for ${chain.name}`);
   }
 
   private async forkInfo(ctx: ForkContext): Promise<ForkInfo> {
