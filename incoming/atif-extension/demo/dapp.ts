@@ -46,9 +46,16 @@ const debugMetrics = {
   rejectedCalls: 0,
 };
 
-let currentAccount: string = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+let currentAccount: string | null = null;
 let currentChainId: string = '0x1';
 let isMockProvider = false;
+
+function getActiveAccount(): string {
+  if (currentAccount) return currentAccount;
+  currentAccount = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+  updateStatusCard();
+  return currentAccount;
+}
 
 // Mock in-page provider used when MetaMask is not present
 class InPageMockEthereumProvider {
@@ -63,7 +70,7 @@ class InPageMockEthereumProvider {
     switch (args.method) {
       case 'eth_requestAccounts':
       case 'eth_accounts':
-        return [currentAccount];
+        return [currentAccount ?? '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'];
       case 'eth_chainId':
         return currentChainId;
       case 'eth_call':
@@ -133,6 +140,7 @@ function updateStatusCard() {
   const elAccount = document.getElementById('stat-account');
   const elChain = document.getElementById('stat-chain');
   const elBadge = document.getElementById('connection-status-badge');
+  const elConnectBtn = document.getElementById('connect-wallet-btn');
 
   const providerName = isMockProvider
     ? 'Mock MetaMask Simulator'
@@ -146,8 +154,23 @@ function updateStatusCard() {
   if (elAccount) elAccount.textContent = currentAccount ? `${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}` : 'Not Connected';
   if (elChain) elChain.textContent = `${currentChainId} (${currentChainId === '0x1' ? 'Ethereum Mainnet' : 'Polygon / Other'})`;
   if (elBadge) {
-    elBadge.textContent = 'Connected';
-    elBadge.className = 'badge badge-success';
+    if (currentAccount) {
+      elBadge.textContent = 'Connected';
+      elBadge.className = 'badge badge-success';
+    } else {
+      elBadge.textContent = 'Not Connected';
+      elBadge.className = 'badge badge-warning';
+    }
+  }
+
+  if (elConnectBtn) {
+    if (currentAccount) {
+      elConnectBtn.textContent = `Connected (${currentAccount.slice(0, 6)}...)`;
+      elConnectBtn.className = 'btn btn-secondary';
+    } else {
+      elConnectBtn.textContent = 'Connect Wallet';
+      elConnectBtn.className = 'btn btn-primary';
+    }
   }
 
   updateDebugPanel();
@@ -213,9 +236,10 @@ function logError(err: any) {
 // 1. Claim Rewards (eth_sendTransaction)
 async function handleClaimRewards() {
   const provider = getProvider();
+  const account = getActiveAccount();
   const params = [
     {
-      from: currentAccount,
+      from: account,
       to: '0x000000000000000000000000000000000000dEaD',
       value: '0x0',
       data: '0x379607f5', // claimRewards()
@@ -238,8 +262,9 @@ async function handleClaimRewards() {
 // 2. Sign Message (personal_sign)
 async function handleSignMessage() {
   const provider = getProvider();
+  const account = getActiveAccount();
   const message = `Welcome to Pre-Execution Interceptor Hackathon Demo!\nTimestamp: ${Date.now()}`;
-  const params = [message, currentAccount];
+  const params = [message, account];
 
   logRequest('personal_sign', params);
 
@@ -257,7 +282,8 @@ async function handleSignMessage() {
 // 3. Sign Typed Data (eth_signTypedData_v4)
 async function handleSignTypedData() {
   const provider = getProvider();
-  const params = [currentAccount, JSON.stringify(DEMO_TYPED_DATA)];
+  const account = getActiveAccount();
+  const params = [account, JSON.stringify(DEMO_TYPED_DATA)];
 
   logRequest('eth_signTypedData_v4', params);
 
@@ -275,9 +301,10 @@ async function handleSignTypedData() {
 // 4. Send Transaction (eth_sendTransaction)
 async function handleSendTransaction() {
   const provider = getProvider();
+  const account = getActiveAccount();
   const params = [
     {
-      from: currentAccount,
+      from: account,
       to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
       value: '0x5af3107a4000', // 0.0001 ETH
     },
@@ -410,14 +437,19 @@ function toggleMockProvider() {
 
 async function handleConnectWallet() {
   const provider = getProvider();
+  const elConnectBtn = document.getElementById('connect-wallet-btn');
+  if (elConnectBtn) {
+    elConnectBtn.textContent = 'Connecting...';
+  }
   try {
     const accs = await provider.request({ method: 'eth_requestAccounts' });
     if (Array.isArray(accs) && accs.length > 0) {
       currentAccount = accs[0];
     }
-    updateStatusCard();
   } catch (err) {
     console.warn('Connect error:', err);
+  } finally {
+    updateStatusCard();
   }
 }
 

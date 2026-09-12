@@ -77,7 +77,7 @@ export function validatePageMessage(raw: unknown): ValidationResult<PageToExtens
 
       // Best-effort chain/account context, strictly format-checked (never fabricated)
       const CHAIN_ID_PATTERN = /^(0x[0-9a-fA-F]+|\d+)$/;
-      const ACCOUNT_PATTERN = /^0x[0-9a-fA-F]{40}$/;
+      const ACCOUNT_PATTERN = /^0x[0-9a-fA-F]{40}$/i;
 
       const sanitized: InterceptedRequestMessage = {
         source: APPLICATION_NAMESPACE,

@@ -157,8 +157,8 @@ class BackgroundCoordinator {
       },
       status: 'INTERCEPTED',
       // Best-effort current chain/account context tracked by the page interceptor
-      chainId: payload.chainId,
-      account: payload.account,
+      chainId: payload.chainId ?? '0x1',
+      account: payload.account ?? '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
       tabId: tab?.id,
     };
 

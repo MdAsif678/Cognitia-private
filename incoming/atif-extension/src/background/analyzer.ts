@@ -72,13 +72,13 @@ export function buildAnalyzeRequest(
   snapshot: PendingRequestSnapshot
 ): { request: AnalyzeRequest } | { error: string } {
   const chainId = parseChainIdToNumber(snapshot.chainId);
+  const account = parseAccountAddress(snapshot.account);
+
   if (chainId === null) {
     return { error: 'Current chain context is unavailable; request cannot be analyzed.' };
   }
-
-  const account = parseAccountAddress(snapshot.account);
   if (account === null) {
-    return { error: 'Current account context is unavailable; request cannot be analyzed.' };
+    return { error: 'Current wallet account context is unavailable; request cannot be analyzed.' };
   }
 
   return {

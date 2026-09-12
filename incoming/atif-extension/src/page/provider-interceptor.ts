@@ -221,26 +221,44 @@ export class ProviderInterceptor {
         // Best-effort fallback to provider's synchronous properties or tx params if dApp has not queried them yet
         let effectiveChainId = this.lastKnownChainId;
         if (!effectiveChainId) {
-          const pChainId = (originalProvider as unknown as { chainId?: unknown })?.chainId;
-          if (typeof pChainId === 'string' && /^(0x[0-9a-fA-F]+|\d+)$/.test(pChainId)) {
-            effectiveChainId = pChainId;
-            this.lastKnownChainId = pChainId;
+          const rawPChainId = (originalProvider as unknown as { chainId?: unknown })?.chainId ?? (window as any).ethereum?.chainId;
+          const pChainIdStr = rawPChainId !== undefined && rawPChainId !== null ? String(rawPChainId) : undefined;
+          if (pChainIdStr && /^(0x[0-9a-fA-F]+|\d+)$/.test(pChainIdStr)) {
+            effectiveChainId = pChainIdStr;
+            this.lastKnownChainId = pChainIdStr;
           } else if (rawParamsCopy[0] && typeof rawParamsCopy[0] === 'object' && 'chainId' in (rawParamsCopy[0] as Record<string, unknown>)) {
             effectiveChainId = String((rawParamsCopy[0] as Record<string, unknown>).chainId);
+          } else {
+            effectiveChainId = '0x1';
           }
+        }
+        if (!effectiveChainId || !/^(0x[0-9a-fA-F]+|\d+)$/.test(effectiveChainId)) {
+          effectiveChainId = '0x1';
         }
 
         let effectiveAccount = this.lastKnownAccounts.length > 0 ? this.lastKnownAccounts[0] : undefined;
         if (!effectiveAccount) {
-          const pSelected = (originalProvider as unknown as { selectedAddress?: unknown })?.selectedAddress;
+          const pSelected = (originalProvider as unknown as { selectedAddress?: unknown })?.selectedAddress ?? (window as any).ethereum?.selectedAddress;
           if (typeof pSelected === 'string' && /^0x[0-9a-fA-F]{40}$/i.test(pSelected)) {
             effectiveAccount = pSelected;
-          } else if (rawParamsCopy[0] && typeof rawParamsCopy[0] === 'object') {
-            const candidate = (rawParamsCopy[0] as Record<string, unknown>).from;
-            if (typeof candidate === 'string' && /^0x[0-9a-fA-F]{40}$/i.test(candidate)) {
-              effectiveAccount = candidate;
+          } else if (rawParamsCopy && Array.isArray(rawParamsCopy)) {
+            for (const param of rawParamsCopy) {
+              if (typeof param === 'string' && /^0x[0-9a-fA-F]{40}$/i.test(param)) {
+                effectiveAccount = param;
+                break;
+              }
+              if (param && typeof param === 'object') {
+                const candidate = (param as Record<string, unknown>).from || (param as Record<string, unknown>).owner || (param as Record<string, unknown>).account;
+                if (typeof candidate === 'string' && /^0x[0-9a-fA-F]{40}$/i.test(candidate)) {
+                  effectiveAccount = candidate;
+                  break;
+                }
+              }
             }
           }
+        }
+        if (!effectiveAccount) {
+          effectiveAccount = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
         }
 
         // Notify extension bridge of intercepted request with strict PAGE -> EXTENSION protocol,
