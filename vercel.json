@@ -1,15 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "incoming/ps2-project/demo/**",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "incoming/ps2-project/demo/$1"
-    }
-  ]
+  "buildCommand": "echo ready",
+  "outputDirectory": "incoming/ps2-project/demo"
 }
