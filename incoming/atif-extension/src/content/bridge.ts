@@ -103,5 +103,31 @@ export class ContentScriptBridge {
   }
 }
 
+/**
+ * Loads the MAIN-world interceptor as a page script.
+ *
+ * The manifest already declares it with `world: "MAIN"`, which is the faster path because the
+ * browser runs it before anything else on the page. Chromium forks that do not support that key
+ * skip it without reporting anything, leaving the side panel working while nothing is ever
+ * intercepted. Injecting from here covers those browsers; the interceptor refuses to start a
+ * second time, so on browsers that honour the manifest this changes nothing.
+ */
+function ensureInterceptorInjected(): void {
+  try {
+    if (document.documentElement.dataset.cognitiaInterceptor === 'active') return;
+    const url = chrome.runtime?.getURL?.('page/provider-interceptor.js');
+    if (!url) return;
+    const script = document.createElement('script');
+    script.src = url;
+    // Keeps this ahead of the page's own deferred scripts rather than racing them.
+    script.async = false;
+    script.addEventListener('load', () => script.remove(), { once: true });
+    (document.head ?? document.documentElement).appendChild(script);
+  } catch (err) {
+    console.warn('[Bridge] Could not inject the page interceptor:', err);
+  }
+}
+
 // Instantiate isolated content bridge
 export const bridgeInstance = new ContentScriptBridge();
+ensureInterceptorInjected();

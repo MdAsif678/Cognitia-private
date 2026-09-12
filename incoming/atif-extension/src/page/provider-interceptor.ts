@@ -569,6 +569,18 @@ export class ProviderInterceptor {
   }
 }
 
-// Instantiate and start interceptor in MAIN world
-export const interceptorInstance = new ProviderInterceptor();
-interceptorInstance.start();
+// Instantiate and start interceptor in MAIN world.
+//
+// This file is declared as a `world: "MAIN"` content script, but Chromium forks that do not honour
+// that key skip it silently, and every signing request then reaches the wallet unreviewed. The
+// isolated bridge therefore injects this same file as a page script as a fallback. Only one
+// instance may ever run, or a request would be intercepted twice, so the two entry paths agree
+// through the one thing both worlds share: the DOM.
+// `document` is absent when the suite loads this module outside a browser, where there is no page
+// to guard and nothing to race.
+const interceptorRoot = typeof document !== 'undefined' ? document.documentElement : undefined;
+const alreadyRunning = interceptorRoot?.dataset.cognitiaInterceptor === 'active';
+if (interceptorRoot && !alreadyRunning) interceptorRoot.dataset.cognitiaInterceptor = 'active';
+
+export const interceptorInstance = alreadyRunning ? undefined : new ProviderInterceptor();
+interceptorInstance?.start();
