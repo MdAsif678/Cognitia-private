@@ -21,7 +21,8 @@
     "test:wallet": "node --test incoming/ps2-project/demo/wallet.test.mjs",
     "test:mainnet": "tsx scripts/test-mainnet.ts",
     "build:demo-extension": "node scripts/build-demo-extension.mjs",
-    "test:extension": "npm run build:demo-extension && node scripts/test-extension.mjs"
+    "test:extension": "npm run build:demo-extension && node scripts/test-extension.mjs",
+    "fund:local": "tsx scripts/fund-local.ts"
   },
   "engines": {
     "node": ">=22"
