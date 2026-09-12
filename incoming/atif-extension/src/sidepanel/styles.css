@@ -33,7 +33,7 @@
 [data-tone='info'] { --tone: var(--ink); }
 [data-tone='neutral'] { --tone: var(--muted); }
 
-html, body { height: 100%; }
+html, body { height: 100%; width: 100%; overflow-x: hidden; }
 body {
   margin: 0;
   background: var(--ground);
@@ -56,7 +56,7 @@ code, pre, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums;
 ::selection { background: rgba(17, 17, 17, 0.12); }
 
 /* ---------------------------------------------------------------- shell */
-.app { display: flex; flex-direction: column; height: 100dvh; background: var(--ground); }
+.app { display: flex; flex-direction: column; height: 100dvh; max-width: 100vw; overflow-x: hidden; background: var(--ground); }
 .topbar {
   flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
   height: 52px; padding: 0 20px; background: var(--ground); border-bottom: 1px solid var(--line);
