@@ -22,7 +22,25 @@ async function connectWallet() {
   catch (error) { showError(error); }
 }
 async function switchToAnvil() {
-  try { await wallet.ensureLocal(); } catch (error) { showError(error); }
+  try { await wallet.ensureLocal(); await watchDemoToken(false); } catch (error) { showError(error); }
+}
+// MetaMask only auto-detects tokens on chains it has a token list for, so on the local chain pUSD is
+// invisible and transfer amounts render as raw 18-decimal integers until the token is registered.
+// EIP-747 asks the wallet to add it; the wallet still confirms with the user.
+let tokenPromptShown = false;
+async function watchDemoToken(force) {
+  if (!CONFIG || !wallet.provider) return;
+  if (!force && tokenPromptShown) return;
+  tokenPromptShown = true;
+  try {
+    const added = await wallet.provider.request({
+      method: 'wallet_watchAsset',
+      params: { type: 'ERC20', options: { address: CONFIG.contracts.testToken, symbol: 'pUSD', decimals: 18 } },
+    });
+    logToConsole('Token registered with wallet', { token: CONFIG.contracts.testToken, added });
+  } catch (error) {
+    if (force) showError(error); else logToConsole('Token registration skipped', { message: error.message || String(error) });
+  }
 }
 async function rpc(method, params = []) {
   const response = await fetch(CONFIG.rpcUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(10000) });
@@ -267,6 +285,7 @@ async function initEventListeners() {
   if (!CONFIG) { for (const button of document.querySelectorAll('[id^="btn-attack"], [id^="btn-benign"], #btn-faucet')) button.disabled = true; }
   document.getElementById("btn-connect")?.addEventListener("click", connectWallet);
   document.getElementById("btn-switch-network")?.addEventListener("click", switchToAnvil);
+  document.getElementById("btn-watch-token")?.addEventListener("click", () => watchDemoToken(true));
   
   document.getElementById("btn-attack-1")?.addEventListener("click", triggerAttack1_TokenApproval);
   document.getElementById("btn-attack-2")?.addEventListener("click", triggerAttack2_NFTApproval);
