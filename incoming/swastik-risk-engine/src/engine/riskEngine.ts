@@ -23,7 +23,13 @@ import {
 } from '../providers/types';
 import { defaultThreatProvider, VersionedThreatStore } from '../providers/threatProvider';
 import { defaultTrustRegistry, type TrustRegistryProvider } from '../providers/trustRegistry';
-import { defaultAnvilSimulator } from '../simulator/anvilSimulator';
+// The production API injects its isolated live-fork provider. Never invent state.
+const unavailableSimulator: SimulationProvider = {
+  name: 'unconfigured',
+  isAvailable: async () => false,
+  simulateTransaction: async () => { throw new Error('Live simulation API is not configured. Use the root analysis API on port 8080.'); },
+  simulateConditionalPermit: async () => { throw new Error('Live simulation API is not configured.'); },
+};
 import { Erc2612SignatureAdapter } from '../providers/signatureAdapters/erc2612Adapter';
 import { Permit2SignatureAdapter } from '../providers/signatureAdapters/permit2Adapter';
 import { PersonalSignSignatureAdapter } from '../providers/signatureAdapters/personalSignAdapter';
@@ -53,7 +59,7 @@ export class RiskEngine {
       options?.threatProvider ||
       (options?.includeDemo ? new VersionedThreatStore({ includeDemo: true }) : defaultThreatProvider);
     this.trustRegistry = options?.trustRegistry || defaultTrustRegistry;
-    this.simulationProvider = options?.simulationProvider || defaultAnvilSimulator;
+    this.simulationProvider = options?.simulationProvider || unavailableSimulator;
     this.chainProvider = options?.chainProvider;
     this.signatureAdapters = options?.signatureAdapters || [
       new Erc2612SignatureAdapter({ chainProvider: this.chainProvider }),
@@ -86,7 +92,7 @@ export class RiskEngine {
     const threatCoverage: CoverageStatus = 'complete';
 
     let chainId = 1;
-    let originDomain: string | undefined;
+    let originDomain: string | undefined = request.type === 'transaction' ? request.metadata?.origin as string | undefined : undefined;
 
     // 2. Process based on request type
     if (request.type === 'transaction') {
@@ -238,6 +244,7 @@ export class RiskEngine {
       simulationResult,
       evidenceMap,
       originDomain,
+      delegatecallTargets: simulationResult?.delegatecallTargets?.map(address => ({ address, isVerified: Boolean(this.trustRegistry.isKnownTrusted(address, chainId)), observedLoss: simulationResult.assetDeltas.some(d => d.account.toLowerCase() === (request.type === "transaction" ? request.from : "").toLowerCase() && BigInt(d.amountDelta) < 0n && d.token !== "0x0000000000000000000000000000000000000000") })),
       chainId,
       trustRegistry: this.trustRegistry,
       calldataCoverage,

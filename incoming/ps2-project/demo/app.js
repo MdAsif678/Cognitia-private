@@ -1,22 +1,91 @@
-// PS2 Demo DApp - Attack Scenarios & Transaction Inspector
-// Designed for testing pre-execution wallet interceptor and simulation engine
+import { WalletSession } from './wallet.mjs';
+import { renderReport } from './report.mjs';
 
-const CONFIG = {
-  chainId: 31337,
-  chainHex: "0x7a69",
-  chainName: "Anvil Local PS2",
-  rpcUrl: "http://127.0.0.1:8545",
-  attacker: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-  // Addresses from deploying DeployAll.s.sol at deployer nonce 8 (see incoming/integration/syed-local.json).
-  contracts: {
-    testToken: "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
-    testNFT: "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
-    testERC1155: "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
-    fakeRewardsDrainer: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e"
-  }
-};
-
+let CONFIG;
 let userAccount = null;
+let busy = false;
+let pendingReview = null;
+const wallet = new WalletSession({ chainId: 31337, chainName: 'Anvil Local PS2', rpcUrl: 'http://127.0.0.1:8545', onChange: state => {
+  userAccount = state.account;
+  const addr = document.getElementById('wallet-address');
+  if (addr) addr.textContent = state.account ?? 'Not connected';
+  const button = document.getElementById('btn-connect');
+  if (button) button.textContent = state.account ? `${state.account.slice(0, 6)}…${state.account.slice(-4)}` : 'Connect Wallet';
+  const network = document.getElementById('network-id');
+  if (network) network.textContent = state.chain ? `${state.chain}${state.chain === 31337 ? ' (Anvil)' : ' — switch required'}` : 'Not connected';
+  if (pendingReview) pendingReview(false);
+}});
+const previewOnly = () => document.getElementById('preview-only').checked;
+function showError(error) {
+  const message = error.code === 4001 ? 'Request rejected. Nothing was signed.' : error.code === -32002 ? 'A wallet request is already open. Check MetaMask.' : error.message || String(error);
+  document.getElementById('demo-status').textContent = message;
+  logToConsole('Request stopped', { message });
+}
+async function connectWallet() {
+  try { if (!wallet.provider && window.ethereum) wallet.use(window.ethereum); await wallet.connect(); }
+  catch (error) { showError(error); }
+}
+async function switchToAnvil() {
+  try { await wallet.ensureLocal(); } catch (error) { showError(error); }
+}
+async function rpc(method, params = []) {
+  const response = await fetch(CONFIG.rpcUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(10000) });
+  const result = await response.json();
+  if (result.error) throw new Error(result.error.message);
+  return result.result;
+}
+async function context() {
+  if (!CONFIG) throw new Error('Demo deployment is missing. Run npm run dev:demo from the repository root.');
+  const chain = Number(await rpc('eth_chainId'));
+  if (chain !== 31337) throw new Error('Demo RPC must be local chain 31337.');
+  const account = previewOnly() ? CONFIG.testWallet : await wallet.ensureLocal();
+  return { account, chainId: 31337 };
+}
+async function runRequest(build) {
+  if (busy) return;
+  busy = true;
+  const status = document.getElementById('demo-status');
+  try {
+    const ctx = await context();
+    const provider = wallet.provider;
+    const readOnly = previewOnly();
+    const request = await build(ctx);
+    const target = request.method === 'eth_sendTransaction' ? request.params[0].to : CONFIG.contracts.testToken;
+    if (target && await rpc('eth_getCode', [target, 'latest']) === '0x') throw new Error('Demo contracts are not deployed on this chain. Restart npm run dev:demo.');
+    status.textContent = 'Analyzing live fork. No signing request has reached your wallet.';
+    const payload = { requestId: crypto.randomUUID(), origin: location.origin, ...ctx, ...request };
+    const response = await fetch(`${CONFIG.apiBaseUrl}/v1/analyze`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(55000) });
+    if (!response.ok) throw new Error(`Analysis API returned HTTP ${response.status}. Check the API terminal.`);
+    const report = await response.json();
+    if (report.requestId !== payload.requestId || !Array.isArray(report.findings)) throw new Error('Analysis API returned an invalid report.');
+    sessionStorage.setItem('cognitia:last-report', JSON.stringify({ request: payload, report }));
+    renderReport(document.getElementById('review-report'), report);
+    const dialog = document.getElementById('review-dialog');
+    const proceed = document.getElementById('review-continue');
+    proceed.hidden = readOnly || report.status === 'failed';
+    proceed.disabled = false;
+    document.getElementById('review-mode').textContent = readOnly ? `Read-only analysis of seeded demo account ${ctx.account}. No wallet is connected by this mode; nothing can be signed or broadcast.` : 'Review before signing. Continue sends this exact request to your selected wallet; the Cognitia extension can intercept it again.';
+    status.textContent = report.summary;
+    dialog.showModal();
+    const accepted = await new Promise(resolve => {
+      const finish = value => { pendingReview = null; dialog.close(); resolve(value); };
+      pendingReview = finish;
+      proceed.onclick = () => finish(true);
+      document.getElementById('review-reject').onclick = () => finish(false);
+      dialog.oncancel = event => { event.preventDefault(); finish(false); };
+    });
+    if (!accepted || readOnly || report.status === 'failed') return;
+    // Re-check after the review to prevent account/network changes from reusing approval.
+    await wallet.refresh();
+    if (provider !== wallet.provider || wallet.account?.toLowerCase() !== ctx.account.toLowerCase() || wallet.chain !== ctx.chainId) throw new Error('Wallet context changed. Run analysis again.');
+    if (Date.now() - Date.parse(report.analyzedAt) > 120000) throw new Error('Report expired. Run analysis again before signing.');
+    status.textContent = 'Request sent for wallet review. Check Cognitia and your wallet.';
+    const result = await provider.request(request);
+    logToConsole('Wallet returned', { result });
+    status.textContent = request.method === 'eth_sendTransaction' ? `Wallet returned transaction hash: ${result}` : 'Wallet produced a signature. It has not been submitted on-chain by this page.';
+  } catch (error) { showError(error); }
+  finally { busy = false; }
+}
 
 // Selectors
 const SELECTORS = {
@@ -50,126 +119,8 @@ function logToConsole(title, data) {
   pre.textContent = entry + pre.textContent;
 }
 
-// Connect Wallet
-async function connectWallet() {
-  const addrElem = document.getElementById("wallet-address");
-  const connBtn = document.getElementById("btn-connect");
-
-  if (window.ethereum) {
-    try {
-      await window.ethereum.request({ method: "eth_chainId" }).catch(() => {});
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-      if (Array.isArray(accounts) && accounts.length > 0) {
-        userAccount = accounts[0];
-        if (addrElem) addrElem.textContent = userAccount;
-        if (connBtn) connBtn.textContent = "Connected: " + userAccount.slice(0, 6) + "..." + userAccount.slice(-4);
-        logToConsole("Wallet Connected", { account: userAccount });
-        return;
-      }
-    } catch (err) {
-      console.warn("Wallet connection request rejected or failed:", err);
-    }
-  }
-
-  userAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-  if (addrElem) addrElem.textContent = userAccount;
-  if (connBtn) connBtn.textContent = "Connected: 0xf39F...2266";
-  logToConsole("Mock Wallet Active", { account: userAccount });
-}
-
-// Switch to Anvil network
-async function switchToAnvil() {
-  if (!window.ethereum) return;
-  try {
-    await window.ethereum.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: CONFIG.chainHex }]
-    });
-  } catch (switchError) {
-    if (switchError.code === 4902) {
-      try {
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params: [{
-            chainId: CONFIG.chainHex,
-            chainName: CONFIG.chainName,
-            rpcUrls: [CONFIG.rpcUrl, "http://127.0.0.1:8545"],
-            nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 }
-          }]
-        });
-      } catch (addError) {
-        console.error("Failed to add network:", addError);
-      }
-    }
-  }
-}
-
-// Helper to send transaction through provider
-async function sendTx(to, data, value = "0x0") {
-  let activeAccount = userAccount;
-
-  if (window.ethereum) {
-    try {
-      await window.ethereum.request({ method: "eth_chainId" }).catch(() => {});
-      const accounts = await window.ethereum.request({ method: "eth_accounts" });
-      if (Array.isArray(accounts) && accounts.length > 0) {
-        activeAccount = accounts[0];
-        userAccount = activeAccount;
-      }
-    } catch (e) {}
-  }
-
-  const txParams = {
-    to: to,
-    data: data,
-    value: value,
-    chainId: CONFIG.chainHex
-  };
-
-  if (activeAccount) {
-    txParams.from = activeAccount;
-  }
-
-  logToConsole("⚡ Sending Transaction to Provider (Ready for Interception)", txParams);
-
-  if (window.ethereum) {
-    try {
-      const txHash = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [txParams]
-      });
-      logToConsole("Transaction Forwarded / Mined", { txHash });
-    } catch (err) {
-      logToConsole("Transaction Result / Interception", {
-        code: err.code,
-        message: err.message
-      });
-      if (err.code === 4001) {
-        alert("🛑 Transaction Rejected by User or Interceptor (Code 4001).");
-      } else if (err.code === 4100) {
-        // Site not authorized yet in MetaMask: trigger eth_requestAccounts and retry
-        try {
-          const reqAccs = await window.ethereum.request({ method: "eth_requestAccounts" });
-          if (Array.isArray(reqAccs) && reqAccs[0]) {
-            txParams.from = reqAccs[0];
-            userAccount = reqAccs[0];
-            const retryHash = await window.ethereum.request({
-              method: "eth_sendTransaction",
-              params: [txParams]
-            });
-            logToConsole("Transaction Forwarded / Mined", { txHash: retryHash });
-            return;
-          }
-        } catch (retryErr) {
-          alert("Please authorize your wallet connection in MetaMask.");
-        }
-      } else {
-        alert("Error: " + (err.message || JSON.stringify(err)));
-      }
-    }
-  } else {
-    alert("⚡ Payload logged to console! (No Web3 provider found in current tab. Load Cognitia Extension to intercept live requests).");
-  }
+function sendTx(to, data, value = '0x0') {
+  return runRequest(async ({ account }) => ({ method: 'eth_sendTransaction', params: [{ from: account, to, data, value, chainId: '0x7a69' }] }));
 }
 
 // ----------------------------------------------------
@@ -225,15 +176,10 @@ function triggerAttack3_DirectDrain() {
 }
 
 // Attack 4: Gasless Voucher (ERC-2612 Permit Signature)
-async function triggerAttack4_PermitSignature() {
-  if (!userAccount) {
-    await connectWallet();
-    if (!userAccount) return;
-  }
-
-  const currentChainId = parseInt(await window.ethereum.request({ method: "eth_chainId" }), 16);
-  const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
-
+function triggerAttack4_PermitSignature() {
+  return runRequest(async ({ account }) => {
+    const block = await rpc('eth_getBlockByNumber', ['latest', false]);
+    const deadline = Number(BigInt(block.timestamp)) + 3600;
   const typedData = {
     types: {
       EIP712Domain: [
@@ -254,38 +200,20 @@ async function triggerAttack4_PermitSignature() {
     domain: {
       name: "PS2 Test USD",
       version: "1",
-      chainId: currentChainId,
+      chainId: 31337,
       verifyingContract: CONFIG.contracts.testToken
     },
     message: {
-      owner: userAccount,
+      owner: account,
       spender: CONFIG.attacker,
       value: "115792089237316195423570985008687907853269984665640564039457584007913129639935",
-      nonce: 0,
+      nonce: BigInt(await rpc('eth_call', [{ to: CONFIG.contracts.testToken, data: '0x7ecebe00' + pad32Address(account) }, 'latest'])).toString(),
       deadline: deadline
     }
   };
 
-  logToConsole("Payload: eth_signTypedData_v4 (ERC-2612 Permit)", {
-    method: "eth_signTypedData_v4",
-    typedData: typedData,
-    expectedSeverity: "HIGH / CRITICAL",
-    riskReason: "Signs an off-chain permit granting unlimited spending authority without an on-chain approval tx"
+    return { method: 'eth_signTypedData_v4', params: [account, JSON.stringify(typedData)] };
   });
-
-  try {
-    const sig = await window.ethereum.request({
-      method: "eth_signTypedData_v4",
-      params: [userAccount, JSON.stringify(typedData)]
-    });
-    logToConsole("Permit Signature Produced", { signature: sig });
-    alert("Permit signed: " + sig.slice(0, 18) + "...");
-  } catch (err) {
-    logToConsole("Signature Error or Interception", { error: err.message, code: err.code });
-    if (err.code === 4001) {
-      alert("🛑 Signature request rejected (Code 4001).");
-    }
-  }
 }
 
 // Attack 5: ERC-1155 Operator Approval
@@ -344,14 +272,7 @@ function triggerBenign_Revoke() {
 
 // Faucet: Mint 1,000 pUSD & 1 NFT to connected wallet
 function triggerFaucet() {
-  if (!userAccount) {
-    userAccount = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-  }
-  const amount = (1000n * 10n ** 18n).toString(16);
-  const mintTokenCalldata = "0x40c10f19" + pad32Address(userAccount) + pad32Uint(amount);
-
-  logToConsole("Faucet: Minting 1,000 pUSD", { calldata: mintTokenCalldata });
-  sendTx(CONFIG.contracts.testToken, mintTokenCalldata);
+  return runRequest(async ({ account }) => ({ method: 'eth_sendTransaction', params: [{ from: account, to: CONFIG.contracts.testToken, data: '0x40c10f19' + pad32Address(account) + pad32Uint(1000n * 10n ** 18n), value: '0x0', chainId: '0x7a69' }] }));
 }
 
 // Bind functions to window so inline HTML onclick handlers work 100% reliably
@@ -367,7 +288,10 @@ window.triggerBenign_Revoke = triggerBenign_Revoke;
 window.triggerFaucet = triggerFaucet;
 
 // Event Listeners Initialization
-function initEventListeners() {
+async function initEventListeners() {
+  document.getElementById('clear-log').onclick = () => { document.getElementById('inspector-output').textContent = ''; };
+  await initializeDemo();
+  if (!CONFIG) { for (const button of document.querySelectorAll('[id^="btn-attack"], [id^="btn-benign"], #btn-faucet')) button.disabled = true; }
   document.getElementById("btn-connect")?.addEventListener("click", connectWallet);
   document.getElementById("btn-switch-network")?.addEventListener("click", switchToAnvil);
   
@@ -386,4 +310,36 @@ if (document.readyState === "loading") {
   window.addEventListener("DOMContentLoaded", initEventListeners);
 } else {
   initEventListeners();
+}
+
+async function initializeDemo() {
+  const providers = new Map();
+  const select = document.getElementById('wallet-select');
+  const add = (provider, id, name) => {
+    if (providers.has(id)) return;
+    providers.set(id, provider);
+    const option = document.createElement('option');
+    option.value = id; option.textContent = name; select.append(option);
+    if (!wallet.provider) wallet.use(provider);
+  };
+  window.addEventListener('eip6963:announceProvider', event => {
+    if (event.detail?.provider && event.detail?.info) add(event.detail.provider, event.detail.info.uuid, event.detail.info.name);
+  });
+  window.dispatchEvent(new Event('eip6963:requestProvider'));
+  if (!providers.size && window.ethereum) add(window.ethereum, 'legacy', 'Browser wallet');
+  select.onchange = () => { wallet.use(providers.get(select.value)); wallet.refresh().catch(showError); };
+  wallet.refresh().catch(showError);
+  try {
+    const response = await fetch('deployment.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Run npm run dev:demo to deploy and seed the testbed.');
+    CONFIG = await response.json();
+    wallet.rpcUrl = CONFIG.rpcUrl;
+    document.getElementById('rpc-endpoint').textContent = CONFIG.rpcUrl;
+    const oldAddresses = { '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6': CONFIG.contracts.testToken, '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318': CONFIG.contracts.testNFT, '0x610178dA211FEF7D417bC0e6FeD39F05609AD788': CONFIG.contracts.testERC1155, '0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e': CONFIG.contracts.fakeRewardsDrainer };
+    for (const node of document.querySelectorAll('.hood-rows dd')) for (const [old, address] of Object.entries(oldAddresses)) if (node.textContent.includes(old)) node.textContent = node.textContent.replace(old, address);
+    if (CONFIG.chainId !== 31337) throw new Error('Only local demo deployments are supported by this testbed.');
+    const health = await fetch(`${CONFIG.apiBaseUrl}/health`, { signal: AbortSignal.timeout(5000) });
+    if (!health.ok) throw new Error('Analysis API is not ready.');
+    document.getElementById('demo-status').textContent = 'Analysis API connected. Read-only mode uses the seeded demo account; switch it off to review real wallet requests.';
+  } catch (error) { showError(error); }
 }

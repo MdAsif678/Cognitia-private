@@ -535,27 +535,16 @@ export const RiskReport: React.FC<RiskReportProps> = ({
               fontWeight: 500,
             }}
             onClick={() => {
-              try {
-                const url = new URL('http://localhost:3000/analysis.html');
-                url.searchParams.set('requestId', snapshot.requestId || '');
-                url.searchParams.set('severity', sevMeta.tone || 'unknown');
-                url.searchParams.set('method', snapshot.method || '');
-                url.searchParams.set('origin', snapshot.origin || '');
-                url.searchParams.set('account', snapshot.account || '');
-                url.searchParams.set('target', details.targetFull || '');
-                url.searchParams.set('value', details.valueEth || '0 ETH');
-                url.searchParams.set('summary', summary.lead || '');
-                if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
-                  chrome.tabs.create({ url: url.toString() });
-                } else {
-                  window.open(url.toString(), '_blank');
-                }
-              } catch (err) {
-                console.error('[Sidepanel] Failed to open detailed analysis page:', err);
-              }
+              const blob = new Blob([JSON.stringify({ request: snapshot, report }, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `cognitia-${snapshot.requestId}.json`;
+              link.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
             }}
           >
-            <span>Detailed Analysis</span>
+            <span>Download full analysis</span>
             <Icon name="arrow" size={13} />
           </button>
         </div>

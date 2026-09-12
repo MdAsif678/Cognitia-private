@@ -1,3 +1,5 @@
+> Historical integration notes. The current setup and fixed behavior are documented in [the root README](../README.md).
+
 # Manual testing runbook (everything on one laptop)
 
 ## Setup on a fresh machine (macOS — Syed's MacBook — or Linux)

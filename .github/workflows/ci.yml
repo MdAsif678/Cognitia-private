@@ -1,0 +1,58 @@
+name: MVP checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.1
+      - run: npm ci
+      - name: Install pinned contract dependencies
+        working-directory: incoming/ps2-project
+        run: |
+          forge install foundry-rs/forge-std@v1.16.2 --no-git
+          forge install OpenZeppelin/openzeppelin-contracts@v5.7.0 --no-git
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:wallet
+      - run: forge test --root incoming/ps2-project
+      - name: Build API and extension
+        env:
+          API_BASE_URL: ${{ vars.ANALYSIS_API_URL || 'http://localhost:8080' }}
+        run: npm run build
+      - name: Deploy local contracts and verify all testbed scenarios
+        run: |
+          npm run dev:demo > /tmp/cognitia-demo.log 2>&1 &
+          DEMO_PID=$!
+          trap 'kill "$DEMO_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:8080/ready > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail http://127.0.0.1:8080/ready
+          npm run test:demo
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cognitia-extension
+          path: incoming/atif-extension/dist/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: simulation-evidence
+          path: artifacts/demo-reports/
+      - name: Build deployable image
+        run: docker build -f services/api/Dockerfile -t cognitia-api:ci .

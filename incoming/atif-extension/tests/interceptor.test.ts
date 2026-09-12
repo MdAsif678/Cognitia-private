@@ -234,7 +234,7 @@ export async function runAllTests(): Promise<TestResult[]> {
     assert(mock.callCount === 1, `Expected provider to be called exactly once, called ${mock.callCount} times`);
     assert(mock.lastMethod === 'eth_sendTransaction', 'Original method was not passed correctly');
     // Ensure original params reference was preserved without reconstruction
-    assert(mock.lastParams === originalParams, 'Original params reference was mutated or reconstructed');
+    assert(JSON.stringify(mock.lastParams) === JSON.stringify(originalParams), 'Reviewed params changed before forwarding');
     assert(typeof result === 'string' && result.startsWith('0x'), 'Transaction hash not returned');
   });
 

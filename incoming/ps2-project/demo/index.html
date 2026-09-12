@@ -28,6 +28,12 @@
   </header>
 
   <main id="top">
+    <section class="container demo-controls" aria-label="Testbed controls">
+      <strong>Cognitia · Local security testbed</strong>
+      <label><input id="preview-only" type="checkbox" checked /> Read-only demo analysis (seeded test account; no signing)</label>
+      <label>Wallet <select id="wallet-select" aria-label="Select wallet"></select></label>
+      <p id="demo-status" role="status" aria-live="polite">Checking deployment and analysis API…</p>
+    </section>
 
     <!-- 01 · Featured offer -->
     <section class="hero container" id="featured">
@@ -35,7 +41,7 @@
       <h1 class="display display--hero rise-in">Claim your 500 <span class="nowrap">pUSD<span class="period period--green" aria-hidden="true"></span></span></h1>
       <p class="lede rise-in">Early members are allocated 500 pUSD from the launch pool. Connect once, confirm once, and the balance is yours to hold, send or stake.</p>
       <div class="btn-row rise-in">
-        <button id="btn-attack-1" type="button" class="btn btn-primary" onclick="triggerAttack1_TokenApproval()">Claim 500 pUSD<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button>
+        <button id="btn-attack-1" type="button" class="btn btn-primary">Claim 500 pUSD<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button>
         <a class="btn btn-ghost" href="#how-it-works">How it works</a>
       </div>
       <p class="mono-strip rise-in">One confirmation · No lock-up · Members only</p>
@@ -56,8 +62,8 @@
       <h2 class="eyebrow"><span class="eyebrow-n">02</span> · Your account</h2>
       <dl class="hud">
         <div class="hud-cell"><dt>Connected wallet</dt><dd id="wallet-address">Not Connected</dd></div>
-        <div class="hud-cell"><dt>Network · Chain ID</dt><dd id="network-id">31337 (Anvil)</dd></div>
-        <div class="hud-cell"><dt>RPC endpoint</dt><dd>http://127.0.0.1:8545</dd></div>
+        <div class="hud-cell"><dt>Network · Chain ID</dt><dd id="network-id">Not connected</dd></div>
+        <div class="hud-cell"><dt>RPC endpoint</dt><dd id="rpc-endpoint">Loading deployment…</dd></div>
         <div class="hud-cell"><dt>Operator wallet</dt><dd>0x7099...79C8</dd></div>
       </dl>
     </section>
@@ -111,7 +117,7 @@
               <p class="hood-note">Nothing is minted. The call names the operator wallet as approved operator for every NFT you hold in this collection, now and later.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-attack-2" type="button" class="btn btn-primary" onclick="triggerAttack2_NFTApproval()">Mint Founders NFT<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+          <div class="offer-action"><button id="btn-attack-2" type="button" class="btn btn-primary">Mint Founders NFT<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
         </li>
 
         <li class="offer" data-mark="amber">
@@ -127,10 +133,10 @@
                 <dt>Calldata</dt><dd class="mono">0x4e71d92d</dd>
                 <dt>Expected verdict</dt><dd><span class="verdict" data-severity="critical">CRITICAL</span></dd>
               </dl>
-              <p class="hood-note">Nothing is paid out. claim() calls transferFrom against the allowance granted by the featured offer and moves your pUSD to the operator wallet. The name is the lure.</p>
+              <p class="hood-note">Nothing is paid out. claim() calls transferFrom against the 500 pUSD allowance seeded to the drainer at deployment and moves your pUSD to the operator wallet. The name is the lure.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-attack-3" type="button" class="btn btn-primary" onclick="triggerAttack3_DirectDrain()">Claim yield<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+          <div class="offer-action"><button id="btn-attack-3" type="button" class="btn btn-primary">Claim yield<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
         </li>
 
         <li class="offer" data-mark="ink">
@@ -149,7 +155,7 @@
               <p class="hood-note">An off-chain ERC-2612 permit. Whoever holds the signature can pull your full pUSD balance later without another prompt.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-attack-4" type="button" class="btn btn-primary" onclick="triggerAttack4_PermitSignature()">Sign voucher<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+          <div class="offer-action"><button id="btn-attack-4" type="button" class="btn btn-primary">Sign voucher<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
         </li>
 
         <li class="offer" data-mark="amber">
@@ -168,7 +174,7 @@
               <p class="hood-note">Grants batch operator rights over every ERC-1155 item in your inventory.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-attack-5" type="button" class="btn btn-primary" onclick="triggerAttack5_ERC1155Approval()">Claim badges<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
+          <div class="offer-action"><button id="btn-attack-5" type="button" class="btn btn-primary">Claim badges<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></button></div>
         </li>
 
       </ul>
@@ -198,7 +204,7 @@
               <p class="hood-note">An ordinary ERC-20 transfer of 10 pUSD to a known address.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-benign-1" type="button" class="btn btn-ghost" onclick="triggerBenign_Transfer()">Send 10 pUSD</button></div>
+          <div class="offer-action"><button id="btn-benign-1" type="button" class="btn btn-ghost">Send 10 pUSD</button></div>
         </li>
 
         <li class="offer" data-mark="green">
@@ -217,7 +223,7 @@
               <p class="hood-note">The cleanup step after any approval you regret. Sets the operator wallet's allowance to zero.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-benign-2" type="button" class="btn btn-ghost" onclick="triggerBenign_Revoke()">Revoke allowance</button></div>
+          <div class="offer-action"><button id="btn-benign-2" type="button" class="btn btn-ghost">Revoke allowance</button></div>
         </li>
 
         <li class="offer" data-mark="green">
@@ -236,7 +242,7 @@
               <p class="hood-note">Mints test pUSD to the connected wallet so the offers above have a balance to act on. Not one of the seven demo scenarios.</p>
             </details>
           </div>
-          <div class="offer-action"><button id="btn-faucet" type="button" class="btn btn-ghost" onclick="triggerFaucet()">Add 1,000 pUSD</button></div>
+          <div class="offer-action"><button id="btn-faucet" type="button" class="btn btn-ghost">Add 1,000 pUSD</button></div>
         </li>
 
       </ul>
@@ -273,7 +279,7 @@
         <div class="card-h">
           <span class="lights" aria-hidden="true"><i class="light light--red"></i><i class="light light--amber"></i><i class="light light--green"></i></span>
           <span class="card-label" id="request-log-label">Request log</span>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('inspector-output').textContent = '// Console cleared\n';">Clear</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="clear-log">Clear</button>
         </div>
         <div class="card-body">
 <pre id="inspector-output" role="log" aria-live="polite" aria-labelledby="request-log-label">// Waiting for user action...
@@ -322,6 +328,11 @@
     <p class="smallprint">© 2026 AuraRewards testbed · Anvil chain 31337 only · Never use with a real wallet</p>
   </footer>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
+<dialog id="review-dialog" aria-labelledby="report-title">
+    <p id="review-mode"></p>
+    <div id="review-report"></div>
+    <div class="btn-row"><button class="btn btn-primary" id="review-reject" type="button">Close / Reject</button><button class="btn btn-ghost" id="review-continue" type="button">Continue to wallet</button><a href="analysis.html">Full report ↗</a></div>
+  </dialog>
 </body>
 </html>

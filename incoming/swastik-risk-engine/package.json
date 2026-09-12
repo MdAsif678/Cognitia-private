@@ -1,5 +1,5 @@
 {
-  "name": "cognitia",
+  "name": "@cognitia/risk-engine",
   "version": "1.0.0",
   "description": "EVM transaction and signature risk analyzer with isolated simulation and deterministic rules",
   "private": true,
@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "lucide-react": "^0.475.0",

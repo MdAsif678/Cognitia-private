@@ -1,3 +1,4 @@
+import { defaultInMemorySimulator } from '../src/simulator/inMemorySimulator';
 import { describe, it, expect } from 'vitest';
 import { privateKeyToAccount } from 'viem/accounts';
 import { domainSeparator, parseSignature } from 'viem';
@@ -455,6 +456,7 @@ describe('ERC-2612 Explicit Supported-Token Adapter', () => {
     const mockChain = setupMockChain();
     const adapter = new Erc2612SignatureAdapter({ chainProvider: mockChain });
     const engine = new RiskEngine({
+      simulationProvider: defaultInMemorySimulator,
       signatureAdapters: [adapter],
       chainProvider: mockChain,
     });

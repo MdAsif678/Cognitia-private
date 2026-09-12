@@ -6,3 +6,9 @@
 .git
 .github
 **/*.log
+**/lib
+**/out
+**/cache
+**/broadcast
+artifacts
+incoming/ps2-project/demo/deployment.json

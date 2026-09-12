@@ -9,21 +9,21 @@ export class PendingRequestManager {
   private activeRequest: PendingRequestSnapshot | null = null;
   private actionLock = false;
 
-  constructor() {
-    this.hydrateFromSessionStorage();
-  }
+  private hydration?: Promise<PendingRequestSnapshot | null>;
 
   /**
    * Restores active pending request from chrome.storage.session on service worker wake-up.
    */
   public async hydrateFromSessionStorage(): Promise<PendingRequestSnapshot | null> {
-    try {
-      const data = await chrome.storage.session.get(STORAGE_KEYS.CURRENT_PENDING_REQUEST);
-      this.activeRequest = data[STORAGE_KEYS.CURRENT_PENDING_REQUEST] ?? null;
+    if (!this.hydration) this.hydration = (async () => {
+      try {
+        const data = await chrome.storage.session.get(STORAGE_KEYS.CURRENT_PENDING_REQUEST);
+        this.activeRequest = data[STORAGE_KEYS.CURRENT_PENDING_REQUEST] ?? null;
+      } catch { this.activeRequest = null; }
       return this.activeRequest;
-    } catch {
-      return null;
-    }
+    })();
+    await this.hydration;
+    return this.activeRequest;
   }
 
   public getActiveRequest(): PendingRequestSnapshot | null {
@@ -33,12 +33,15 @@ export class PendingRequestManager {
   /**
    * Registers a new intercepted request, transitioning to INTERCEPTED state.
    */
-  public async registerRequest(snapshot: PendingRequestSnapshot): Promise<void> {
+  public async registerRequest(snapshot: PendingRequestSnapshot): Promise<boolean> {
+    await this.hydrateFromSessionStorage();
+    if (this.activeRequest && !['COMPLETED', 'REJECTED', 'STALE'].includes(this.activeRequest.status)) return false;
     this.activeRequest = {
       ...snapshot,
       status: 'INTERCEPTED',
     };
     await this.persist();
+    return true;
   }
 
   /**
@@ -58,7 +61,7 @@ export class PendingRequestManager {
     if (!this.matchesActive(requestId)) return false;
 
     // Guard: Do not overwrite if request became STALE while analysis was running
-    if (this.activeRequest!.status === 'STALE') {
+    if (this.activeRequest!.status !== 'ANALYZING') {
       return false;
     }
 
@@ -74,7 +77,7 @@ export class PendingRequestManager {
   public async setAnalysisUnavailable(requestId: string, errorMsg: string): Promise<boolean> {
     if (!this.matchesActive(requestId)) return false;
 
-    if (this.activeRequest!.status === 'STALE') {
+    if (this.activeRequest!.status !== 'ANALYZING') {
       return false;
     }
 

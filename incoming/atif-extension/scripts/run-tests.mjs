@@ -71,7 +71,10 @@ async function run() {
     const r4 = await riskReportMod.runRiskReportTests();
     r4.forEach((t) => console.log(`  ${t.passed ? '✓' : '✗'} ${t.name}${t.error ? ' - ' + t.error : ''}`));
 
-    const all = [...r1, ...r2, ...r3, ...r4];
+    const regressionMod = await server.ssrLoadModule('./tests/regressions.test.ts');
+    const r5 = await regressionMod.runRegressionTests();
+    r5.forEach(t => console.log(`  ${t.passed ? '✓' : '✗'} ${t.name}${t.error ? ' - ' + t.error : ''}`));
+    const all = [...r1, ...r2, ...r3, ...r4, ...r5];
     const passed = all.filter((t) => t.passed).length;
     const failed = all.length - passed;
 

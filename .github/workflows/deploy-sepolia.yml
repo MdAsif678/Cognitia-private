@@ -1,0 +1,33 @@
+name: Deploy demo contracts to Sepolia
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deploy:
+    environment: sepolia
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: incoming/ps2-project
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.1
+      - run: |
+          forge install foundry-rs/forge-std@v1.16.2 --no-git
+          forge install OpenZeppelin/openzeppelin-contracts@v5.7.0 --no-git
+          forge test
+      - name: Deploy on verified testnet
+        env:
+          RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+          PRIVATE_KEY: ${{ secrets.SEPOLIA_DEPLOYER_KEY }}
+        run: |
+          test -n "$RPC_URL" && test -n "$PRIVATE_KEY"
+          test "$(cast chain-id --rpc-url "$RPC_URL")" = 11155111
+          forge script script/DeployAll.s.sol:DeployAll --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --broadcast
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sepolia-deployments
+          path: incoming/ps2-project/broadcast/DeployAll.s.sol/11155111/

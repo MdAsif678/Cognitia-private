@@ -1,164 +1,97 @@
-# Cognitia
+# Cognitia — PS2 MVP
 
-Pre-execution transaction interceptor for EVM wallets. A browser extension catches signing
-requests before MetaMask sees them, an analysis API simulates the transaction on a forked chain,
-and the side panel shows what would actually happen (asset outflows, approvals, drainer patterns)
-before the user decides to continue or reject.
+Cognitia holds an unsigned EVM transaction or signature request, simulates its effect on an isolated Anvil fork, and shows a severity-ranked report before forwarding to the wallet. Nothing is sent to the upstream chain during analysis.
 
-**This repository is private.** Only invited collaborators can clone it; see
-[Cloning](#cloning-private-repo) below.
+## Run the complete local demo
+
+Requires Node 22+, Python 3 and [Foundry](https://getfoundry.sh/introduction/installation/) (`anvil`, `forge`, `cast`).
+
+```sh
+npm ci
+cd incoming/ps2-project
+forge install foundry-rs/forge-std@v1.16.2 --no-git
+forge install OpenZeppelin/openzeppelin-contracts@v5.7.0 --no-git
+cd ../..
+npm run dev:demo
+```
+
+Open **http://localhost:3000**. This command starts a loopback-only chain (31337), deploys the test contracts, seeds three NFTs and the 500 pUSD stale allowance used by `claim()`, writes the actual deployment addresses, and starts the full analysis API on 8080. The demo starts in **read-only mode**, explicitly using Anvil's seeded account, without pretending that a wallet is connected. All seven scenarios and the faucet can be analyzed before any signing.
+
+If another project uses these ports:
+
+```sh
+DEMO_RPC_PORT=18545 DEMO_API_PORT=18080 DEMO_WEB_PORT=13000 npm run dev:demo
+```
+
+The launcher refuses to reuse or reset an existing chain. Stop it with Ctrl-C. Restarting creates a fresh demo chain and seed state.
+
+## Real wallet interception
+
+```sh
+# Set this to the actual API URL BEFORE building (8080 is the default).
+API_BASE_URL=http://localhost:8080 npm run build -w @cognitia/extension
+```
+
+In Chrome, load `incoming/atif-extension/dist` unpacked from `chrome://extensions`, then reload the dapp. Select your wallet, click **Connect Wallet**, switch to Anvil, and turn off read-only analysis. Use a disposable Anvil account, never a funded real wallet. Anvil's first development account is `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`; its publicly known test key is in `scripts/deploy-local.ts`.
+
+The dapp first shows its own live report. **Continue to wallet** then issues the request; the extension holds it again before the real provider sees it. Open the Cognitia toolbar side panel if Chrome does not open it automatically. Reject cancels with code 4001; Continue forwards the captured payload once. Transactions, ERC-2612 typed data and `personal_sign` are supported. Unsupported signing variants are blocked. Changing account or chain invalidates a pending review. Requests cannot overwrite an existing review. A disconnected wallet never becomes a mock wallet.
+
+The extension's error screen retains an explicit “continue without analysis” acknowledgement; no failed analysis is presented as safe. Read-only dapp mode cannot sign, and the dapp does not offer Continue on failed analysis. Provider wrapping is an MVP boundary: direct RPC transports, pre-cached providers, legacy signing transports and other frames can bypass it. It is not a wallet-integrated security boundary.
+
+## What is analyzed
+
+| PS2 requirement | Implementation |
+|---|---|
+| Live state fork | Isolated Anvil instance, pinned block/hash, upstream RPC used for reads only |
+| State differences | Native balance/gas, ERC-20 balances and allowances, ERC-721 token approvals/ownership, ERC-721/1155 operator permissions, ERC-1155 balances |
+| Intent and hidden effects | Standard calldata, unknown selectors, internal transfers, reverts, delegatecall targets |
+| Threat matching | Chain-scoped address/domain records plus exact runtime hash matching from fork observations; evidence includes provenance |
+| Demo attack | Deployed `FakeRewardsDrainer.claim()` spends the seeded allowance; approvals and permits demonstrate later drains |
+| Before signing | Provider interception, pending review, rejection, immutable reviewed payload and exactly-once forwarding |
+| Human report | Severity, explanations, immediate vs conditional effects, exposed assets, coverage, assumptions and downloadable JSON |
+
+The root API now combines the original simulator, baseline rules and teammate risk engine by default. There is no separate “combined API” required. Unsigned permits are **conditional authorization models**, not evidence that a missing signature is valid; domain, signer, nonce and deadline checks are disclosed. Unsupported signatures retain unknown/partial coverage. Asset discovery is bounded to calldata, logs, traces and hints; this is not exhaustive wallet inventory. Unknown bytecode does not itself prove malice. The small bundled threat dataset is not a live intelligence feed; absence of a match is not a safety guarantee. Placeholder runtime hashes and sanctions-only records were removed from drainer evidence.
+
+## API and live chains
+
+```sh
+cp services/api/.env.example services/api/.env
+# Set SIM_CHAINS=1,11155111 and your RPC_URL_1 / RPC_URL_11155111.
+npm run dev:api
+```
+
+Environment files are loaded by the server. Private RPC URLs improve reliability over public endpoints. `GET /health` checks the process; `GET /ready` checks configured upstream chain identity/readiness. `POST /v1/analyze` accepts the exact wallet method/params with `requestId`, `origin`, numeric `chainId`, and `account`. `POST /v1/replay` accepts `{ "chainId": 1, "txHash": "0x…" }`, then replays against the end of the preceding block; earlier transactions in the same block are not applied. Historical replays need archive RPC access.
+
+The API budget is 45 seconds; the extension waits 55 seconds. Network failures report the endpoint and a recovery instruction, never fabricated fork data. Configure an optional `THREAT_DB_FILE` containing a JSON array of `ThreatRecord` objects to add independently sourced indicators. Demo indicators require `THREAT_INCLUDE_DEMO=true`; keep that off in production.
+
+## Verify
+
+```sh
+npm run typecheck
+npm test                   # shared, simulator, API, risk engine, extension
+npm run test:wallet
+forge test --root incoming/ps2-project
+npm run build
+# With dev:demo running:
+npm run test:demo
+# Optional read-only live mainnet fork verification:
+npm run test:mainnet
+```
+
+The smoke test sends the seven demo requests plus unknown calldata and personal signing through the real HTTP API, validates every response using the extension schema, checks expected severities/state changes, and verifies that the upstream block is unchanged. Reports are saved in `artifacts/demo-reports`. Solidity and fork integration tests also cover ERC-1155 transfers, single-NFT approvals, delegatecalls, concurrency and upstream state isolation.
+
+## GitHub Actions deployment
+
+The active workflows are at the repository root in `.github/workflows`; workflows inside teammate folders are historical and do not run.
+
+- **MVP checks**: clean install, typechecks, all tests, contract tests, seeded demo smoke tests, extension artifact, evidence artifact and Docker build.
+- **Deploy analysis API**: runs checks, publishes a private GHCR image, deploys to a Docker VM through verified SSH, and checks `/ready` over HTTPS.
+- **Deploy demo contracts to Sepolia**: manual testnet-only deployment with a chain-ID check and downloadable deployment receipts. The local bait dapp intentionally remains restricted to chain 31337.
+
+For API deployment, point an API hostname to your VM, install Docker/Compose, and create `/opt/cognitia` owned by the deployment user. Copy `deploy/.env.example` to `/opt/cognitia/.env` and configure its domain and RPCs. Set repository variable `ANALYSIS_API_URL` to `https://your-api-host`. Configure the `production` environment secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, and `DEPLOY_KNOWN_HOSTS` (verified host key, not a runtime trust-on-first-use scan). The deployment user must be able to run Docker. Run **Deploy analysis API** manually. Caddy terminates HTTPS; Anvil forks and the API port are not publicly exposed. The extension artifact is built with the configured API URL. Public deployments should restrict origins and add authenticated access if serving beyond a controlled demo.
+
+For Sepolia, configure environment secrets `SEPOLIA_RPC_URL` and `SEPOLIA_DEPLOYER_KEY` using a dedicated testnet-only account with test ETH. No deployment credentials are stored in this repository. Workflows are supplied for deployment; local verification does not imply a production or Sepolia deployment has run.
 
 ## Layout
 
-| Path | Owner | What it is |
-|---|---|---|
-| `packages/shared` | Asif | Shared types, Zod schemas, fixtures |
-| `packages/simulator` | Asif | Anvil fork simulation (state diffs, traces, exposures) |
-| `services/api` | Asif | Fastify analysis API (`/v1/analyze`, `/v1/chains`, `/v1/replay`, `/health`) |
-| `incoming/atif-extension` | Atif | Chrome MV3 extension: interceptor, service worker, side panel (React + Vite) |
-| `incoming/swastik-risk-engine` | Swastik | Decoder, threat DB, severity rules (Next.js app) |
-| `incoming/ps2-project` | Syed | Foundry contracts, demo dapp, docker compose, CI |
-| `incoming/integration` | Asif | Glue: engine bridge, contract checks, combined server |
-
-The three `incoming/*` folders are teammate drops and are **not** part of the npm workspaces yet.
-Each one is installed separately (see below). Integration status, verified scenarios, and open
-items per person are in [`incoming/README.md`](incoming/README.md).
-
-## Prerequisites
-
-- **Node.js 20.11+** (`node -v`)
-- **Foundry** (`anvil`, `forge`, `cast`) — the API forks chains with `anvil`, and Syed's contracts
-  build with `forge`. Install: <https://book.getfoundry.sh/getting-started/installation>
-- **Google Chrome** for the extension
-- **Python 3** only if you want to serve Syed's demo site with `serve.py`
-- (optional) **Docker** for `incoming/ps2-project/infra/docker-compose.yml`
-
-## Cloning (private repo)
-
-You need to be added as a collaborator first. Then either:
-
-```bash
-# with GitHub CLI (easiest; run `gh auth login` once)
-gh repo clone MdAsif678/Cognitia-private
-
-# or with plain git; you'll be prompted for your GitHub username and a
-# Personal Access Token (classic, `repo` scope) as the password
-git clone https://github.com/MdAsif678/Cognitia-private.git
-
-# or over SSH if you have a key on your GitHub account
-git clone git@github.com:MdAsif678/Cognitia-private.git
-```
-
-Never commit tokens, private keys, or `.env` files. `.gitignore` already excludes `.env*`
-(except `.env.example`), `node_modules/`, build output, and local archives.
-
-## Quick start (API + extension)
-
-### 1. Analysis API
-
-```bash
-npm install          # installs packages/* and services/* via workspaces
-npm run dev:api      # http://localhost:8080
-```
-
-Check it: `curl http://localhost:8080/health`
-
-No `.env` is required; it defaults to keyless public RPCs. For faster, unthrottled forks copy
-[`services/api/.env.example`](services/api/.env.example) to `services/api/.env` and set
-`RPC_URL_1` / `RPC_URL_11155111` to an Alchemy or Infura URL.
-
-To run the API **with Swastik's risk engine merged in** (recommended for the demo), first install
-his folder (step 3), then:
-
-```bash
-npx tsx incoming/integration/serve-with-swastik.ts   # http://localhost:8081, same routes
-```
-
-### 2. Chrome extension
-
-The backend URL is baked in at **build time**, so set it before building:
-
-```bash
-cd incoming/atif-extension
-npm install
-cp .env.example .env     # API_BASE_URL=http://localhost:8080 (use 8081 for the combined server)
-npm run build            # -> dist/
-```
-
-Then in Chrome: `chrome://extensions` → enable *Developer mode* → *Load unpacked* → select
-`incoming/atif-extension/dist`. Open any dapp, trigger a wallet signature, and the side panel opens.
-
-Tests: `npm test` (in that folder). Mock backend for UI work only: `npm run mock-backend`
-(port 3000).
-
-### 3. Swastik's risk engine (standalone Next.js app)
-
-```bash
-cd incoming/swastik-risk-engine
-npm install
-cp .env.example .env
-npm run dev              # http://localhost:3000
-npm test
-```
-
-Only needed standalone for his UI; the API consumes his engine through
-`incoming/integration/swastik-bridge.ts`.
-
-### 4. Syed's contracts + demo dapp (local chain)
-
-```bash
-cd incoming/ps2-project
-forge install            # restores lib/forge-std and lib/openzeppelin-contracts (not committed)
-forge build
-```
-
-Run a local chain and deploy (the private key below is Anvil's default test account #0, not a
-secret):
-
-```bash
-anvil --port 8545 --chain-id 31337
-cast rpc anvil_setNonce 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 0x8 --rpc-url http://127.0.0.1:8545
-forge script script/DeployAll.s.sol:DeployAll --rpc-url http://127.0.0.1:8545 \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast
-```
-
-Seeding for buttons 2/3/5 (mint 3 NFTs, approve 500 pUSD to the drainer) and the addresses are
-described in [`incoming/ps2-project/HANDOFF_TO_TEAM.md`](incoming/ps2-project/HANDOFF_TO_TEAM.md)
-and [`incoming/README.md`](incoming/README.md). Serve the site:
-
-```bash
-python3 demo/serve.py    # http://localhost:3000
-# or: docker compose -f infra/docker-compose.yml up   (anvil + site)
-```
-
-Point the API at the local chain with `RPC_URL_31337=http://127.0.0.1:8545` in `services/api/.env`.
-
-> Known issue: `forge test` currently fails in `AttackScenariosTest.setUp()`
-> (`ERC1155InvalidReceiver`). Fix is to make the test contract inherit `ERC1155Holder`; see
-> `incoming/README.md`.
-
-## Tests and checks
-
-```bash
-npm test                 # shared + simulator + api (vitest)
-npm run typecheck
-cd incoming/atif-extension && npm test
-cd incoming/swastik-risk-engine && npm test
-cd incoming/ps2-project && forge test
-```
-
-## Ports
-
-| Service | Port |
-|---|---|
-| Analysis API | 8080 |
-| API + Swastik engine (combined) | 8081 |
-| Local Anvil chain | 8545 |
-| Syed's demo site / Swastik's Next app / Atif's mock backend | 3000 (run one at a time) |
-
-## Contributing
-
-- Work on a branch and open a pull request into `main`.
-- Keep teammate code in its `incoming/<name>` folder until the planned merge
-  (`packages/risk-engine`, `apps/extension`) described at the end of `incoming/README.md`.
-- Do not commit `.env`, keys, `node_modules`, `dist/`, `out/`, `cache/`, or archives.
+`packages/shared`: contracts/schemas; `packages/simulator`: fork and diff engine; `services/api`: HTTP pipeline; `incoming/atif-extension`: Chrome extension; `incoming/swastik-risk-engine`: deterministic rules/adapters; `incoming/integration`: bridge; `incoming/ps2-project`: Solidity demo and dapp. The extension and risk engine are now npm workspaces, installed from the root lockfile. The legacy Next.js workbench has no default synthetic simulation; use the root API for live reports.

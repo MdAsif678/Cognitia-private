@@ -1,12 +1,15 @@
+import { existsSync, readFileSync } from 'node:fs';
+// Native env loader supports quoted values and inline comments without exposing secrets.
+for (const file of ['.env', 'services/api/.env']) if (existsSync(file)) process.loadEnvFile(file);
 import type { RiskEngine } from "@cognitia/shared";
 import { Simulator } from "@cognitia/simulator";
 import { buildApp } from "./app";
 import { loadConfig } from "./config";
-import { baselineEngine } from "./engine";
+import { createSwastikEngine } from "../../../incoming/integration/swastik-bridge";
 
-/** Swap point for Swastik's engine: `return riskEngine` once @cognitia/risk-engine exists. */
+/** Full deterministic threat assessment over genuine fork state. */
 function createEngine(): RiskEngine {
-  return baselineEngine;
+  return createSwastikEngine({ chains: config.chains, includeDemo: process.env.THREAT_INCLUDE_DEMO === "true", threatRecords: process.env.THREAT_DB_FILE ? JSON.parse(readFileSync(process.env.THREAT_DB_FILE, "utf8")) : undefined });
 }
 
 const config = loadConfig();

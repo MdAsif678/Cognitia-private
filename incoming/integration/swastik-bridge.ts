@@ -24,8 +24,8 @@ import { chainsFromEnv, type ChainConfig } from "@cognitia/simulator";
 import { baselineAssess } from "../../services/api/src/engine/assess";
 import { baselineDecode } from "../../services/api/src/engine/decode";
 import { RiskEngine as SwastikRiskEngine } from "../swastik-risk-engine/src/engine/riskEngine";
-import { VersionedThreatStore } from "../swastik-risk-engine/src/providers/threatProvider";
-import type { ChainReadProvider, SimulationProvider } from "../swastik-risk-engine/src/providers/types";
+import { PRODUCTION_THREAT_DATABASE, VersionedThreatStore } from "../swastik-risk-engine/src/providers/threatProvider";
+import type { ChainReadProvider, SimulationProvider, ThreatRecord } from "../swastik-risk-engine/src/providers/types";
 import type { AnalysisReport as SwastikReport } from "../swastik-risk-engine/src/schemas/report";
 import type { AnalysisRequest as SwastikRequest } from "../swastik-risk-engine/src/schemas/request";
 import type { SimulationResult as SwastikSimulation } from "../swastik-risk-engine/src/schemas/simulation";
@@ -42,18 +42,18 @@ const READ_ABI = parseAbi([
 class ChainReader implements ChainReadProvider {
   readonly chainId: number;
   private readonly client: PublicClient;
-  constructor(cfg: ChainConfig) {
+  constructor(cfg: ChainConfig, private readonly blockNumber?: bigint) {
     this.chainId = cfg.chainId;
     this.client = createPublicClient({ transport: http(cfg.rpcUrl, { timeout: 15_000 }) });
   }
-  getBalance(account: string) { return this.client.getBalance({ address: account as Address }); }
-  getTokenBalance(token: string, account: string) { return this.client.readContract({ address: token as Address, abi: READ_ABI, functionName: "balanceOf", args: [account as Address] }); }
-  getTokenAllowance(token: string, owner: string, spender: string) { return this.client.readContract({ address: token as Address, abi: READ_ABI, functionName: "allowance", args: [owner as Address, spender as Address] }); }
-  getTokenNonce(token: string, owner: string) { return this.client.readContract({ address: token as Address, abi: READ_ABI, functionName: "nonces", args: [owner as Address] }); }
-  getDomainSeparator(token: string) { return this.client.readContract({ address: token as Address, abi: READ_ABI, functionName: "DOMAIN_SEPARATOR" }).then((x) => x as string).catch(() => null); }
-  getBlockTimestamp() { return this.client.getBlock().then((b) => b.timestamp); }
-  getBytecode(address: string) { return this.client.getCode({ address: address as Address }).then((c) => c ?? null); }
-  getBlockNumber() { return this.client.getBlockNumber({ cacheTime: 0 }); }
+  getBalance(account: string) { return this.client.getBalance({ address: account as Address, blockNumber: this.blockNumber }); }
+  getTokenBalance(token: string, account: string) { return this.client.readContract({ address: token as Address, abi: READ_ABI, functionName: "balanceOf", args: [account as Address], blockNumber: this.blockNumber }); }
+  getTokenAllowance(token: string, owner: string, spender: string) { return this.client.readContract({ address: token as Address, abi: READ_ABI, functionName: "allowance", args: [owner as Address, spender as Address], blockNumber: this.blockNumber }); }
+  getTokenNonce(token: string, owner: string) { return this.client.readContract({ address: token as Address, abi: READ_ABI, functionName: "nonces", args: [owner as Address], blockNumber: this.blockNumber }); }
+  getDomainSeparator(token: string) { return this.client.readContract({ address: token as Address, abi: READ_ABI, functionName: "DOMAIN_SEPARATOR", blockNumber: this.blockNumber }).then((x) => x as string).catch(() => null); }
+  getBlockTimestamp() { return this.client.getBlock({ blockNumber: this.blockNumber }).then((b) => b.timestamp); }
+  getBytecode(address: string) { return this.client.getCode({ address: address as Address, blockNumber: this.blockNumber }).then((c) => c ?? null); }
+  getBlockNumber() { return this.blockNumber !== undefined ? Promise.resolve(this.blockNumber) : this.client.getBlockNumber({ cacheTime: 0 }); }
 }
 
 function toSwastikRequest(input: AssessInput): SwastikRequest | undefined {
@@ -200,18 +200,14 @@ function finish(findings: Finding[], floor?: Severity): Assessment {
   return { severity, summary: top ? `${PREFIX[severity]} — ${top.title}` : PREFIX[severity], findings: kept };
 }
 
-export type SwastikEngineOptions = { chains?: ChainConfig[]; includeDemo?: boolean };
+export type SwastikEngineOptions = { chains?: ChainConfig[]; includeDemo?: boolean; threatRecords?: ThreatRecord[] };
 
 export function createSwastikEngine(opts: SwastikEngineOptions = {}): RiskEngine {
   const chains = new Map((opts.chains ?? chainsFromEnv()).map((c) => [c.chainId, c]));
-  const threats = new VersionedThreatStore({ includeDemo: opts.includeDemo });
-  const readers = new Map<number, ChainReader>();
-  const reader = (chainId: number) => {
+  const threats = new VersionedThreatStore({ includeDemo: opts.includeDemo, customRecords: [...PRODUCTION_THREAT_DATABASE, ...(opts.threatRecords ?? [])] });
+  const reader = (chainId: number, blockNumber?: string) => {
     const cfg = chains.get(chainId);
-    if (!cfg) return undefined;
-    let r = readers.get(chainId);
-    if (!r) readers.set(chainId, (r = new ChainReader(cfg)));
-    return r;
+    return cfg ? new ChainReader(cfg, blockNumber ? BigInt(blockNumber) : undefined) : undefined;
   };
 
   return {
@@ -238,7 +234,7 @@ export function createSwastikEngine(opts: SwastikEngineOptions = {}): RiskEngine
 
       let report: SwastikReport;
       try {
-        const engine = new SwastikRiskEngine({ simulationProvider: provider, chainProvider: reader(input.request.chainId), includeDemo: opts.includeDemo });
+        const engine = new SwastikRiskEngine({ simulationProvider: provider, chainProvider: reader(input.request.chainId, input.simulation?.fork.blockNumber), threatProvider: threats, includeDemo: opts.includeDemo });
         report = await engine.analyze(his);
       } catch (err) {
         mine.findings.unshift({
@@ -256,6 +252,25 @@ export function createSwastikEngine(opts: SwastikEngineOptions = {}): RiskEngine
       }
 
       const theirs = report.findings.map((f) => toFinding(f, report));
+      // Match runtime hashes actually captured on the pinned fork, including delegatecall implementations.
+      const delegateTargets = new Set(input.simulation?.calls.filter(c => c.type === 'DELEGATECALL' && c.to).map(c => c.to!.toLowerCase()));
+      for (const account of input.simulation?.accounts ?? []) {
+        if (!account.isContract || !account.codeHash) continue;
+        const role = delegateTargets.has(account.address.toLowerCase()) ? 'implementation' as const : 'target' as const;
+        for (const match of threats
+          .matchAll({ chainId: input.request.chainId, entities: [{ bytecodeHash: account.codeHash, role }] })
+          .filter((candidate) => candidate.chainId === input.request.chainId)) {
+          theirs.push({
+            id: `bytecode.${match.id}.${account.address}`, ruleId: 'threat.runtime-bytecode', severity: 'critical',
+            title: `${match.isDemo ? '[DEMO ONLY] ' : ''}Runtime bytecode matches a drainer signature`,
+            description: `${account.address} matches ${match.label}.`,
+            explanation: `The runtime code captured on fork block ${input.simulation!.fork.blockNumber} has hash ${account.codeHash}, matching ${match.label}. Source: ${match.sourceUrl}. This is an exact code match, not a selector guess.`,
+            confidence: match.confidence, evidenceType: 'threat-bytecode',
+            evidence: [{ kind: 'bytecode', summary: `Exact runtime hash ${account.codeHash}`, data: { address: account.address, block: input.simulation!.fork, record: match.record, freshness: match.freshness } }],
+          });
+        }
+      }
+
       // His engine only matches the origin domain for signature requests; do it for transactions too.
       if (his.type === "transaction" && !theirs.some((f) => f.ruleId === "swastik.documented_phishing_domain")) {
         for (const m of threats.matchDomain(input.request.origin)) {

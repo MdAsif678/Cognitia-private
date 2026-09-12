@@ -30,7 +30,15 @@ export function isMetaMaskProvider(info?: ProviderContextInfo, provider?: EIP119
  */
 export class ProviderDiscovery {
   // Set of original provider instances that have already been wrapped to prevent double-wrapping
-  private wrappedProviders = new WeakSet<EIP1193Provider>();
+  private wrappedProviders = new WeakMap<EIP1193Provider, EIP1193Provider>();
+  private wrap(provider: EIP1193Provider, info: ProviderContextInfo): EIP1193Provider {
+    const existing = this.wrappedProviders.get(provider);
+    if (existing) return existing;
+    const wrapped = this.onWrapProvider(provider, info);
+    this.wrappedProviders.set(provider, wrapped);
+    this.wrappedProviders.set(wrapped, wrapped);
+    return wrapped;
+  }
   private onWrapProvider: ProviderWrapCallback;
 
   constructor(wrapCallback: ProviderWrapCallback) {
@@ -65,35 +73,7 @@ export class ProviderDiscovery {
       logger.provider(
         `[Provider] Detected immediate window.ethereum [MetaMask: ${isMetaMask}]. Wrapping minimally.`
       );
-      this.onWrapProvider(currentEthereum, info);
-      this.wrappedProviders.add(currentEthereum);
-    } else if (!currentEthereum) {
-      // Create a fallback EIP-1193 provider if no third-party wallet extension is present
-      const fallbackProvider: EIP1193Provider = {
-        isMetaMask: true,
-        request: async (args: any) => {
-          if (args.method === 'eth_requestAccounts' || args.method === 'eth_accounts') {
-            return ['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'];
-          }
-          if (args.method === 'eth_chainId') {
-            return '0x7a69'; // 31337
-          }
-          if (args.method === 'wallet_switchEthereumChain' || args.method === 'wallet_addEthereumChain') {
-            return null;
-          }
-          return '0x' + '00'.repeat(32);
-        },
-        on: (_event: string, _listener: any) => {},
-        removeListener: (_event: string, _listener: any) => {},
-      } as unknown as EIP1193Provider;
-      currentEthereum = fallbackProvider;
-      const info: ProviderContextInfo = {
-        name: 'Cognitia Standalone Interceptor Provider',
-        rdns: 'io.cognitia',
-      };
-      logger.provider('[Provider] Initialized Cognitia Standalone Provider for window.ethereum.');
-      this.onWrapProvider(currentEthereum, info);
-      this.wrappedProviders.add(currentEthereum);
+      currentEthereum = this.wrap(currentEthereum, info);
     }
 
     // Intercept late wallet injection via getter/setter trap on window.ethereum
@@ -113,10 +93,9 @@ export class ProviderDiscovery {
             logger.provider(
               `[Provider] Late injection detected on window.ethereum [MetaMask: ${isMetaMask}]. Wrapping minimally.`
             );
-            this.onWrapProvider(newProvider, info);
-            this.wrappedProviders.add(newProvider);
+            newProvider = this.wrap(newProvider, info);
           }
-          currentEthereum = newProvider;
+          currentEthereum = this.wrappedProviders.get(newProvider) ?? newProvider;
         },
       });
     } catch (err) {
@@ -136,10 +115,6 @@ export class ProviderDiscovery {
         if (!announceEvent.detail?.provider) return;
 
         const originalProvider = announceEvent.detail.provider;
-        if (this.wrappedProviders.has(originalProvider)) {
-          logger.provider('[Provider] EIP-6963 provider already wrapped, skipping duplicate.');
-          return;
-        }
 
         const rawInfo = announceEvent.detail.info;
         const isMetaMask = isMetaMaskProvider(
@@ -157,8 +132,14 @@ export class ProviderDiscovery {
           `[Provider] Discovered EIP-6963 Provider: "${info.name}" [RDNS: ${info.rdns ?? 'none'}, isMetaMask: ${isMetaMask}]`
         );
 
-        this.onWrapProvider(originalProvider, info);
-        this.wrappedProviders.add(originalProvider);
+        const wrapped = this.wrap(originalProvider, info);
+        if (wrapped !== originalProvider) {
+          // Frozen EIP-6963 detail cannot be mutated. Deliver a replacement announcement.
+          event.stopImmediatePropagation();
+          window.dispatchEvent(new CustomEvent(EIP6963_EVENTS.ANNOUNCE, {
+            detail: Object.freeze({ info: rawInfo, provider: wrapped }),
+          }));
+        }
       }) as EventListener,
       true // Capture phase: intercepts event before dApp listeners receive it
     );

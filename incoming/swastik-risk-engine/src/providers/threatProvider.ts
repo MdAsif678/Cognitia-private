@@ -70,40 +70,7 @@ export const PRODUCTION_THREAT_DATABASE: ThreatRecord[] = [
       'Attacker recipient address from May 20, 2023 malicious governance proposal attack draining TORN governance tokens.',
   },
 
-  // 4. Target Threat Indicator: OFAC Sanctioned Tornado Cash Router
-  // Source: US Department of the Treasury Office of Foreign Assets Control (OFAC)
-  {
-    id: 'threat-addr-tornado-router',
-    chainId: 1,
-    matchType: 'address',
-    matchValue: '0xd90e2f925da726b50c4ed8d0fb90ad053324f31b'.toLowerCase(),
-    label: 'OFAC Sanctioned: Tornado Cash Router',
-    sourceUrl: 'https://home.treasury.gov/policy-issues/financial-sanctions/recent-actions/20220808',
-    confidence: 'high',
-    updatedAt: '2022-08-08T00:00:00Z',
-    demoOnly: false,
-    entityRole: 'target',
-    description: 'OFAC specially designated national (SDN) privacy mixer router contract on Ethereum Mainnet.',
-  },
-
-  // 5. Codehash Threat Indicator: Inferno Vanity Proxy Runtime Bytecode
-  // Source: SlowMist Drainer Bytecode Signature Analysis
-  // Matches exact keccak256 hash over exact runtime bytecode at pinned block.
-  {
-    id: 'threat-codehash-inferno-proxy',
-    chainId: 1,
-    matchType: 'codehash',
-    matchValue: '0x12a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3'.toLowerCase(),
-    label: 'Inferno Drainer: Vanity Proxy Implementation Runtime Bytecode',
-    sourceUrl: 'https://slowmist.com/report/drainer-bytecode-signatures',
-    confidence: 'high',
-    updatedAt: '2024-01-20T00:00:00Z',
-    demoOnly: false,
-    entityRole: 'implementation',
-    description:
-      'Exact runtime bytecode keccak256 hash matching compiled proxy forwarder implementation deployed by Inferno Drainer.',
-  },
-
+  // Only traceable incident indicators belong here; placeholder codehashes and sanctions are not drainer evidence.
   // 6. Generic Behavioral Heuristic: Unlimited Token Allowance
   // Chain-independent generic rule (chainId: null)
   {
@@ -257,7 +224,7 @@ export function normalizeHostname(input: string): DomainNormalizationResult {
     const url = new URL(raw);
     hostname = url.hostname.toLowerCase();
   } catch {
-    hostname = input.trim().toLowerCase().split('/')[0].split(':')[0].split('?')[0];
+    hostname = input.trim().toLowerCase().split(/[/:?]/)[0] ?? '';
   }
 
   hostname = hostname.replace(/\.+$/, '');

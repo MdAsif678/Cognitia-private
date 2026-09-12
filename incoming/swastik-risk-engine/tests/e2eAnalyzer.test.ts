@@ -258,7 +258,8 @@ describe('End-to-End Analyzer Suite', () => {
 
       const data = (await res.json()) as AnalysisReport;
       expect(data.requestId).toBeDefined();
-      expect(data.overallSeverity).toBe('low');
+      expect(data.overallSeverity).toBe('unknown');
+      expect(data.coverage.components.simulation).toBe('failed');
       expect(() => analysisReportSchema.parse(data)).not.toThrow();
     });
 

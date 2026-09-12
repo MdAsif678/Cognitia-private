@@ -44,6 +44,15 @@ const partialSim = (over: Partial<SimulationResult>): SimulationResult => ({
 });
 
 describe("analyze pipeline guarantees", () => {
+  it("enforces the deadline on a stalled risk engine, not just fork execution", async () => {
+    const d = deps(async () => partialSim({}), 30);
+    d.engine = { ...baselineEngine, assess: () => new Promise(() => {}) };
+    const report = await analyze(req, d);
+    expect(report.status).toBe('failed');
+    expect(report.severity).toBe('unknown');
+    expect(report.summary).toMatch(/timed out/);
+  });
+
   it("returns a failed, unknown-severity report when simulation throws", async () => {
     const r = await analyze(req, deps(() => Promise.reject(new SimulationError("UPSTREAM_UNAVAILABLE", "rpc down"))));
     expect(AnalysisReportSchema.parse(r)).toBeTruthy();

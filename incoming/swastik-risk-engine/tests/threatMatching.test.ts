@@ -48,14 +48,8 @@ describe('Versioned Threat Indicator Store', () => {
       expect(matches[0].entityRole).toBe('recipient');
     });
 
-    it('matches OFAC Sanctioned Tornado Router with target role', () => {
-      const ofacRouter = '0xd90e2f925da726b50c4ed8d0fb90ad053324f31b';
-      const matches = defaultThreatProvider.matchAddress(ofacRouter, 1, 'target');
-
-      expect(matches.length).toBe(1);
-      expect(matches[0].id).toBe('threat-addr-tornado-router');
-      expect(matches[0].entityRole).toBe('target');
-      expect(matches[0].sourceUrl).toContain('treasury.gov');
+    it('does not equate a sanctions record with a drainer signature', () => {
+      expect(defaultThreatProvider.matchAddress('0xd90e2f925da726b50c4ed8d0fb90ad053324f31b', 1)).toEqual([]);
     });
 
     it('enforces cross-chain address mismatch (Ethereum indicator does NOT match on Polygon)', () => {
@@ -74,15 +68,8 @@ describe('Versioned Threat Indicator Store', () => {
   });
 
   describe('Exact Runtime Bytecode Hash Matching & Empty-Code Rejection', () => {
-    it('matches exact runtime bytecode hash with implementation role', () => {
-      const hash = '0x12a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3';
-      const matches = defaultThreatProvider.matchBytecodeHash(hash, 'implementation');
-
-      expect(matches.length).toBe(1);
-      expect(matches[0].id).toBe('threat-codehash-inferno-proxy');
-      expect(matches[0].matchType).toBe('codehash');
-      expect(matches[0].evidenceType).toBe('codehash_match');
-      expect(matches[0].entityRole).toBe('implementation');
+    it('does not ship a fabricated production codehash', () => {
+      expect(defaultThreatProvider.matchBytecodeHash('0x12a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3')).toEqual([]);
     });
 
     it('matches runtime bytecode directly using keccak256 without metadata normalization', () => {
@@ -168,30 +155,17 @@ describe('Versioned Threat Indicator Store', () => {
   });
 
   describe('Proxy and Implementation Distinction', () => {
-    it('maintains distinct evidence for proxy target and implementation contracts', () => {
-      const proxyAddress = '0xd90e2f925da726b50c4ed8d0fb90ad053324f31b'; // OFAC router (target)
-      const implementationBytecodeHash = '0x12a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3'; // Drainer proxy code (implementation)
-
-      const matches = defaultThreatProvider.matchAll({
-        entities: [
-          { address: proxyAddress, role: 'target' },
-          { bytecodeHash: implementationBytecodeHash, role: 'implementation' },
-        ],
-        chainId: 1,
-      });
-
-      expect(matches.length).toBe(2);
-
-      const targetMatch = matches.find((m) => m.entityRole === 'target');
-      const implMatch = matches.find((m) => m.entityRole === 'implementation');
-
-      expect(targetMatch).toBeDefined();
-      expect(targetMatch?.id).toBe('threat-addr-tornado-router');
-      expect(targetMatch?.evidenceType).toBe('address_match');
-
-      expect(implMatch).toBeDefined();
-      expect(implMatch?.id).toBe('threat-codehash-inferno-proxy');
-      expect(implMatch?.evidenceType).toBe('codehash_match');
+    it('keeps fixture implementation and target evidence separate', () => {
+      const runtime = '0x60006000fd' as const;
+      const hash = keccak256(runtime);
+      const address = '0x1111111111111111111111111111111111111111';
+      const base = { chainId: 1, label: 'Test-only indicator', sourceUrl: 'https://example.com/test', confidence: 'high' as const, updatedAt: '2026-09-12T00:00:00Z', demoOnly: true };
+      const store = new VersionedThreatStore({ includeDemo: true, customRecords: [
+        { ...base, id: 'fixture-target', matchType: 'address', matchValue: address, entityRole: 'target' },
+        { ...base, id: 'fixture-implementation', matchType: 'codehash', matchValue: hash, entityRole: 'implementation' },
+      ] });
+      const matches = store.matchAll({ chainId: 1, entities: [{ address, role: 'target' }, { bytecodeHash: hash, role: 'implementation' }] });
+      expect(matches.map(m => m.evidenceType).sort()).toEqual(['address_match', 'codehash_match']);
     });
   });
 

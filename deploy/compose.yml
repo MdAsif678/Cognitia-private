@@ -1,0 +1,28 @@
+services:
+  api:
+    image: ${API_IMAGE:?Set API_IMAGE}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8080
+      SIM_CHAINS: ${SIM_CHAINS:-1,11155111}
+      ENABLE_DEBUG_ROUTES: 'false'
+    expose: ['8080']
+    mem_limit: 2g
+    pids_limit: 128
+    init: true
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN to the API hostname}
+    ports: ['80:80', '443:443']
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api]
+volumes:
+  caddy_data:
+  caddy_config:

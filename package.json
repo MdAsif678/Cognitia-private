@@ -5,15 +5,22 @@
   "workspaces": [
     "packages/*",
     "services/*",
-    "apps/*"
+    "apps/*",
+    "incoming/swastik-risk-engine",
+    "incoming/atif-extension"
   ],
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present",
-    "dev:api": "npm run dev -w @cognitia/api"
+    "build": "npm run build -w @cognitia/api && npm run build -w @cognitia/extension",
+    "dev:api": "npm run dev -w @cognitia/api",
+    "dev:demo": "node scripts/dev-demo.mjs",
+    "deploy:local": "tsx scripts/deploy-local.ts",
+    "test:demo": "tsx scripts/test-demo.ts",
+    "test:wallet": "node --test incoming/ps2-project/demo/wallet.test.mjs",
+    "test:mainnet": "tsx scripts/test-mainnet.ts"
   },
   "engines": {
-    "node": ">=20.11"
+    "node": ">=22"
   }
 }

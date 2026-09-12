@@ -51,8 +51,12 @@ export class ProviderInterceptor {
   // the results of read-only provider calls already made by the dApp.
   // Never fabricated: when unknown, intercepted requests are sent without context
   // and the backend analysis reports itself unavailable rather than guessing.
-  private lastKnownChainId: string | undefined;
-  private lastKnownAccounts: readonly string[] = Object.freeze([]);
+  private contexts = new WeakMap<EIP1193Provider, { chainId?: string; accounts: readonly string[] }>();
+  private contextFor(provider: EIP1193Provider) {
+    let context = this.contexts.get(provider);
+    if (!context) { context = { accounts: [] }; this.contexts.set(provider, context); }
+    return context;
+  }
 
   constructor() {
     this.discovery = new ProviderDiscovery((provider, info) => this.wrapProvider(provider, info));
@@ -86,12 +90,12 @@ export class ProviderInterceptor {
     if (typeof provider.on === 'function') {
       provider.on('accountsChanged', (accounts: unknown) => {
         logger.invalidated('[Invalidated] Provider emitted accountsChanged:', accounts);
-        self.handleAccountOrChainChange('accountsChanged', accounts);
+        self.handleAccountOrChainChange('accountsChanged', accounts, provider);
       });
 
       provider.on('chainChanged', (chainId: unknown) => {
         logger.invalidated('[Invalidated] Provider emitted chainChanged:', chainId);
-        self.handleAccountOrChainChange('chainChanged', chainId);
+        self.handleAccountOrChainChange('chainChanged', chainId, provider);
       });
     }
 
@@ -107,20 +111,16 @@ export class ProviderInterceptor {
       logger.provider(`[Provider] Successfully wrapped provider.request() for "${info.name}".`);
     } catch {
       logger.provider(`[Provider] provider.request is read-only. Wrapping with proxy for "${info.name}".`);
-      return new Proxy(provider, {
-        get(target, prop, receiver) {
-          if (prop === 'request') {
-            return function interceptedProxyRequest(
-              this: unknown,
-              args: EIP1193RequestArguments
-            ): Promise<unknown> {
-              const callingContext = this || target;
-              return self.handleRequest(target, originalRequest, args, info, callingContext);
-            };
-          }
-          return Reflect.get(target, prop, receiver);
+      const wrapped = new Proxy({} as EIP1193Provider, {
+        get(_target, prop) {
+          if (prop === 'request') return (args: EIP1193RequestArguments) => self.handleRequest(provider, originalRequest, args, info, provider);
+          const value = Reflect.get(provider, prop, provider);
+          return typeof value === 'function' ? value.bind(provider) : value;
         },
+        has(_target, prop) { return prop in provider; },
       });
+      this.notifyProviderDiscovered(info, provider);
+      return wrapped;
     }
 
     // Notify extension bridge of discovered provider
@@ -210,7 +210,7 @@ export class ProviderInterceptor {
           originalProvider,
           context: callingContext,
           // CRITICAL: Keep untouched reference to original args without normalization or reconstruction
-          originalArgs: args,
+          originalArgs: deepFreeze(JSON.parse(JSON.stringify(args)) as EIP1193RequestArguments),
           frozenSnapshot,
           createdAt: Date.now(),
         };
@@ -219,26 +219,22 @@ export class ProviderInterceptor {
         logger.pendingRequest(`[Pending Request] Created pending record [requestId: ${requestId}] in state PENDING.`);
 
         // Best-effort fallback to provider's synchronous properties or tx params if dApp has not queried them yet
-        let effectiveChainId = this.lastKnownChainId;
+        let effectiveChainId = this.contextFor(originalProvider).chainId;
         if (!effectiveChainId) {
-          const rawPChainId = (originalProvider as unknown as { chainId?: unknown })?.chainId ?? (window as any).ethereum?.chainId;
+          const rawPChainId = (originalProvider as unknown as { chainId?: unknown })?.chainId;
           const pChainIdStr = rawPChainId !== undefined && rawPChainId !== null ? String(rawPChainId) : undefined;
           if (pChainIdStr && /^(0x[0-9a-fA-F]+|\d+)$/.test(pChainIdStr)) {
             effectiveChainId = pChainIdStr;
-            this.lastKnownChainId = pChainIdStr;
+            this.contextFor(originalProvider).chainId = pChainIdStr;
           } else if (rawParamsCopy[0] && typeof rawParamsCopy[0] === 'object' && 'chainId' in (rawParamsCopy[0] as Record<string, unknown>)) {
             effectiveChainId = String((rawParamsCopy[0] as Record<string, unknown>).chainId);
-          } else {
-            effectiveChainId = '0x1';
           }
         }
-        if (!effectiveChainId || !/^(0x[0-9a-fA-F]+|\d+)$/.test(effectiveChainId)) {
-          effectiveChainId = '0x1';
-        }
+        if (effectiveChainId && !/^(0x[0-9a-fA-F]+|\d+)$/.test(effectiveChainId)) effectiveChainId = undefined;
 
-        let effectiveAccount = this.lastKnownAccounts.length > 0 ? this.lastKnownAccounts[0] : undefined;
+        let effectiveAccount = this.contextFor(originalProvider).accounts.length > 0 ? this.contextFor(originalProvider).accounts[0] : undefined;
         if (!effectiveAccount) {
-          const pSelected = (originalProvider as unknown as { selectedAddress?: unknown })?.selectedAddress ?? (window as any).ethereum?.selectedAddress;
+          const pSelected = (originalProvider as unknown as { selectedAddress?: unknown })?.selectedAddress;
           if (typeof pSelected === 'string' && /^0x[0-9a-fA-F]{40}$/i.test(pSelected)) {
             effectiveAccount = pSelected;
           } else if (rawParamsCopy && Array.isArray(rawParamsCopy)) {
@@ -257,9 +253,7 @@ export class ProviderInterceptor {
             }
           }
         }
-        if (!effectiveAccount) {
-          effectiveAccount = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
-        }
+
 
         // Notify extension bridge of intercepted request with strict PAGE -> EXTENSION protocol,
         // including best-effort current chain/account context (captured passively from the
@@ -287,7 +281,7 @@ export class ProviderInterceptor {
     //    Results of read-only context methods are captured passively to enrich later
     //    intercepted requests with current chainId/account — no extra provider calls are made.
     const result = originalRequest.call(callingContext, args);
-    this.captureChainContextResult(method, result);
+    this.captureChainContextResult(method, result, originalProvider);
     return result;
   }
 
@@ -295,12 +289,12 @@ export class ProviderInterceptor {
    * Passively records chainId/account from the results of delegated read-only calls.
    * Attaches observers without altering the promise returned to the dApp.
    */
-  private captureChainContextResult(method: string, resultPromise: Promise<unknown>): void {
+  private captureChainContextResult(method: string, resultPromise: Promise<unknown>, originalProvider: EIP1193Provider): void {
     if (method !== 'eth_chainId' && method !== 'eth_accounts' && method !== 'eth_requestAccounts') return;
     if (!resultPromise || typeof resultPromise.then !== 'function') return;
 
     resultPromise
-      .then((value) => this.recordChainContext(method, value))
+      .then((value) => this.recordChainContext(method, value, originalProvider))
       .catch(() => {
         // Context capture is best-effort; provider failures here are irrelevant
       });
@@ -309,20 +303,18 @@ export class ProviderInterceptor {
   /**
    * Records provider-provided chain/account values when they are well-formed.
    */
-  private recordChainContext(method: string, value: unknown): void {
+  private recordChainContext(method: string, value: unknown, originalProvider: EIP1193Provider): void {
     if (method === 'eth_chainId') {
       if (typeof value === 'string' && /^(0x[0-9a-fA-F]+|\d+)$/.test(value)) {
-        this.lastKnownChainId = value;
+        this.contextFor(originalProvider).chainId = value;
       }
       return;
     }
-    if ((method === 'eth_accounts' || method === 'eth_requestAccounts') && Array.isArray(value) && value.length > 0) {
+    if ((method === 'eth_accounts' || method === 'eth_requestAccounts') && Array.isArray(value)) {
       const accounts = value.filter(
         (a): a is string => typeof a === 'string' && /^0x[0-9a-fA-F]{40}$/.test(a)
       );
-      if (accounts.length > 0) {
-        this.lastKnownAccounts = Object.freeze(accounts);
-      }
+      this.contextFor(originalProvider).accounts = Object.freeze(accounts);
     }
   }
 
@@ -345,6 +337,11 @@ export class ProviderInterceptor {
       return;
     }
 
+    if (Date.now() - record.createdAt > 120000) {
+      this.executeReject(requestId, 'Review expired. Retry the request for fresh analysis.');
+      return;
+    }
+
     record.state = 'FORWARDING';
     logger.forwarding(
       `[Forwarding] Invoking original provider for requestId: ${requestId} with exact original method & params.`
@@ -355,17 +352,7 @@ export class ProviderInterceptor {
       // provider object it belongs to: the page usually calls through a Proxy (MetaMask's
       // window.ethereum), and wallet internals that use private fields throw when `this` is
       // that Proxy. Fall back to the caller's own `this` if the provider rejects the binding.
-      let result: unknown;
-      try {
-        result = await record.originalRequest.call(record.originalProvider, record.originalArgs);
-      } catch (firstError) {
-        if (firstError instanceof TypeError && record.context !== record.originalProvider) {
-          logger.forwarding(`[Forwarding] Provider-bound call threw TypeError, retrying with caller context:`, firstError);
-          result = await record.originalRequest.call(record.context, record.originalArgs);
-        } else {
-          throw firstError;
-        }
-      }
+      const result = await record.originalRequest.call(record.originalProvider, record.originalArgs);
       record.state = 'COMPLETED';
       logger.forwarding(`[Forwarding] Original provider call resolved successfully for requestId: ${requestId}.`);
       record.resolve(result);
@@ -433,12 +420,12 @@ export class ProviderInterceptor {
   /**
    * Invalidate all pending requests when accountsChanged or chainChanged occurs.
    */
-  public handleAccountOrChainChange(changeType: 'accountsChanged' | 'chainChanged', newValue: unknown): void {
+  public handleAccountOrChainChange(changeType: 'accountsChanged' | 'chainChanged', newValue: unknown, originalProvider?: EIP1193Provider): void {
     // Keep the passive chain context tracker current
     if (changeType === 'chainChanged') {
-      this.recordChainContext('eth_chainId', newValue);
+      if (originalProvider) this.recordChainContext('eth_chainId', newValue, originalProvider);
     } else {
-      this.recordChainContext('eth_accounts', newValue);
+      if (originalProvider) this.recordChainContext('eth_accounts', newValue, originalProvider);
     }
 
     // Notify bridge to mark active reports STALE in extension
@@ -466,7 +453,7 @@ export class ProviderInterceptor {
 
     // Invalidate any active PENDING requests in the page context
     for (const [requestId, record] of this.pendingRequests.entries()) {
-      if (record.state === 'PENDING') {
+      if (record.state === 'PENDING' && (!originalProvider || record.originalProvider === originalProvider)) {
         logger.invalidated(
           `[Invalidated] Pending request ${requestId} invalidated due to ${changeType}. Rejecting with code 4001.`
         );

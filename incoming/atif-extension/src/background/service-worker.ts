@@ -121,11 +121,11 @@ class BackgroundCoordinator {
         break;
 
       case 'ACCOUNT_CHANGED':
-        await this.handleAccountChanged(payload.accounts, payload.origin);
+        await this.handleAccountChanged(payload.accounts, payload.origin, tab?.id);
         break;
 
       case 'CHAIN_CHANGED':
-        await this.handleChainChanged(payload.chainId, payload.origin);
+        await this.handleChainChanged(payload.chainId, payload.origin, tab?.id);
         break;
 
       case 'PROVIDER_DISCOVERED':
@@ -157,13 +157,19 @@ class BackgroundCoordinator {
       },
       status: 'INTERCEPTED',
       // Best-effort current chain/account context tracked by the page interceptor
-      chainId: payload.chainId ?? '0x1',
-      account: payload.account ?? '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+      chainId: payload.chainId,
+      account: payload.account,
       tabId: tab?.id,
     };
 
     // 1. Ephemerally register the intercepted request in session storage
-    await this.pendingManager.registerRequest(snapshot);
+    if (!await this.pendingManager.registerRequest(snapshot)) {
+      await this.relayToContentTab(tab?.id ?? null, {
+        source: APPLICATION_NAMESPACE, direction: 'EXTENSION_TO_PAGE', type: 'USER_REJECT',
+        requestId: payload.requestId, reason: 'Finish the current Cognitia review before starting another request.',
+      });
+      return;
+    }
 
     // 2. Open side panel to show user the analysis interface
     if (tab?.id && chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
@@ -180,7 +186,7 @@ class BackgroundCoordinator {
     await this.pendingManager.setAnalyzing(payload.requestId);
     this.broadcastStatus(payload.requestId, 'ANALYZING');
 
-    await this.relayToContentTab(this.activeTabId, {
+    await this.relayToContentTab(tab?.id ?? null, {
       source: APPLICATION_NAMESPACE,
       direction: 'EXTENSION_TO_PAGE',
       type: 'ANALYSIS_STARTED',
@@ -217,7 +223,7 @@ class BackgroundCoordinator {
       this.broadcastStatus(payload.requestId, 'ANALYSIS_READY', analysisResult);
 
       // Notify page context of analysis completion
-      await this.relayToContentTab(this.activeTabId, {
+      await this.relayToContentTab(tab?.id ?? null, {
         source: APPLICATION_NAMESPACE,
         direction: 'EXTENSION_TO_PAGE',
         type: 'ANALYSIS_RESULT',
@@ -233,9 +239,9 @@ class BackgroundCoordinator {
   /**
    * Handles account changes from the page.
    */
-  private async handleAccountChanged(_accounts: readonly string[], origin?: string): Promise<void> {
+  private async handleAccountChanged(_accounts: readonly string[], origin?: string, tabId?: number): Promise<void> {
     const active = this.pendingManager.getActiveRequest();
-    if (!active) return;
+    if (!active || active.tabId !== tabId) return;
 
     const marked = await this.pendingManager.markStale(origin);
     if (marked) {
@@ -245,7 +251,7 @@ class BackgroundCoordinator {
 
       this.broadcastStatus(active.requestId, 'STALE', undefined, 'Active request invalidated: account switched.');
 
-      await this.relayToContentTab(this.activeTabId, {
+      await this.relayToContentTab(active.tabId ?? null, {
         source: APPLICATION_NAMESPACE,
         direction: 'EXTENSION_TO_PAGE',
         type: 'INVALIDATE_REQUEST',
@@ -258,9 +264,9 @@ class BackgroundCoordinator {
   /**
    * Handles chain changes from the page.
    */
-  private async handleChainChanged(_chainId: string, origin?: string): Promise<void> {
+  private async handleChainChanged(_chainId: string, origin?: string, tabId?: number): Promise<void> {
     const active = this.pendingManager.getActiveRequest();
-    if (!active) return;
+    if (!active || active.tabId !== tabId) return;
 
     const marked = await this.pendingManager.markStale(origin);
     if (marked) {
@@ -270,7 +276,7 @@ class BackgroundCoordinator {
 
       this.broadcastStatus(active.requestId, 'STALE', undefined, 'Active request invalidated: chain switched.');
 
-      await this.relayToContentTab(this.activeTabId, {
+      await this.relayToContentTab(active.tabId ?? null, {
         source: APPLICATION_NAMESPACE,
         direction: 'EXTENSION_TO_PAGE',
         type: 'INVALIDATE_REQUEST',
@@ -318,6 +324,7 @@ class BackgroundCoordinator {
    * User rejected: Reject with EIP-1193 code 4001 without calling the original provider.
    */
   private async handleUserReject(requestId: string, reason?: string): Promise<void> {
+    await this.pendingManager.hydrateFromSessionStorage();
     const snapshot = await this.pendingManager.markRejected(requestId, reason);
     if (!snapshot) {
       console.warn('[ServiceWorker] Rejection ignored: request already finalized.');

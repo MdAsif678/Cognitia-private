@@ -10,10 +10,10 @@
  *      (where `process` does not exist) and the injected value would never load.
  *   2. Runtime environment (Node / test processes) via globalThis.process.env.
  *      `API_BASE_URL` is authoritative; the legacy `ANALYZER_BASE_URL` is still honored.
- *   3. Development default (local mock backend).
+ *   3. Development default (real local analysis API).
  */
 
-const DEFAULT_API_BASE_URL = 'http://localhost:3000';
+const DEFAULT_API_BASE_URL = 'http://localhost:8080';
 
 interface ProcessLike {
   env?: Record<string, string | undefined>;
@@ -93,5 +93,5 @@ export const API_CONFIG = {
   BASE_URL: resolveApiBaseUrl(),
   ANALYZE_ENDPOINT_PATH: '/v1/analyze',
   // Real fork simulation takes 2–10 s on public RPCs; the backend's own ceiling is 45 s.
-  TIMEOUT_MS: 20000,
+  TIMEOUT_MS: 55000,
 } as const;

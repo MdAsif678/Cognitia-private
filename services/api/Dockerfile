@@ -6,7 +6,7 @@ FROM node:22-bookworm-slim AS build
 WORKDIR /repo
 # The whole repo is copied so the lockfile matches every workspace; only the API's deps are installed.
 COPY . .
-RUN npm ci --workspace @cognitia/api --include-workspace-root --ignore-scripts
+RUN npm ci --ignore-scripts
 RUN npm run build -w @cognitia/api
 
 FROM debian:bookworm-slim AS foundry

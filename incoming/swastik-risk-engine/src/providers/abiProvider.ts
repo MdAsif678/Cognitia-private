@@ -157,7 +157,7 @@ export class DefaultAbiLookupProvider implements AbiLookupProvider {
     if (candidate) {
       return {
         signature: candidate,
-        functionName: candidate.split('(')[0],
+        functionName: candidate.split('(')[0]!,
         isCandidate: true,
         disclaimer: SELECTOR_DISCLAIMER,
       };

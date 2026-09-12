@@ -566,19 +566,19 @@ describe('Deterministic, Versioned Findings Engine', () => {
     });
 
     it('retains visible unknown function warning while preserving critical severity from threat match', async () => {
-      // Transaction invoking an unknown function selector, targeting the OFAC sanctioned router
+      // Transaction invoking an unknown function selector, targeting the documented drainer contract
       const multiRiskTx = {
         type: 'transaction' as const,
         chainId: 1,
         from: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
-        to: '0xd90e2f925da726b50c4ed8d0fb90ad053324f31b', // OFAC Sanctioned Router
+        to: '0x0000db5c8b030ae5034102f866416f8b25530182', // Documented Drainer
         value: '0',
         calldata: '0xdeadbeef0000000000000000000000000000000000000000000000000000000000000001', // unknown selector
       };
 
       const report = await engine.analyze(multiRiskTx);
 
-      // Overall severity is critical due to OFAC match
+      // Overall severity is critical due to drainer match
       expect(report.overallSeverity).toBe('critical');
 
       // Coverage is partial due to unknown function selector

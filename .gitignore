@@ -20,3 +20,7 @@ incoming/ps2-project/lib/
 # Build/tooling artifacts
 *.tsbuildinfo
 .claude/
+
+# Generated local deployment and verification reports
+incoming/ps2-project/demo/deployment.json
+artifacts/

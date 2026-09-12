@@ -1,3 +1,5 @@
+> Historical integration notes. The current setup and fixed behavior are documented in [the root README](../README.md).
+
 # Teammate drops — integration status (2026-09-11)
 
 Extracted here from `Cognitia.zip` (Swastik) and `cognitia2.rar` (Atif). Not part of the npm

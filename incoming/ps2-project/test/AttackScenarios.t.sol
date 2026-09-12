@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import {Test} from "forge-std/Test.sol";
 import {console2} from "forge-std/console2.sol";
 import {TestToken} from "../src/TestToken.sol";
@@ -9,7 +10,7 @@ import {TestERC1155} from "../src/TestERC1155.sol";
 import {FakeRewardsDrainer} from "../src/FakeRewardsDrainer.sol";
 import {MaliciousTokenApprover} from "../src/MaliciousTokenApprover.sol";
 
-contract AttackScenariosTest is Test {
+contract AttackScenariosTest is Test, ERC1155Holder {
     TestToken public token;
     TestNFT public nft;
     TestERC1155 public erc1155;

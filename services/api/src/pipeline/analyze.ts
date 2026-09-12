@@ -92,7 +92,7 @@ export async function analyze(req: AnalyzeRequest, deps: AnalyzerDeps, opts: Ana
       simulationError = describeSimulationError(err, deps, deps.timeoutMs);
     }
 
-    const assessment = await deps.engine.assess({ request: req, normalized, decoded, simulation, simulationError });
+    const assessment = await withDeadline(deps.engine.assess({ request: req, normalized, decoded, simulation, simulationError }), controller.signal);
     return buildReport({ req, requestHash, normalized, decoded, simulation, simulationError, assessment, started, engineName, extraAssumptions: opts.extraAssumptions });
   } catch (err) {
     return failedReport(req, requestHash, describeSimulationError(err, deps, deps.timeoutMs), started, engineName);
