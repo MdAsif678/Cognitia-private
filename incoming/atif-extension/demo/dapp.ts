@@ -408,7 +408,22 @@ function toggleMockProvider() {
 // Initialize App
 // -------------------------------------------------------------
 
-window.addEventListener('DOMContentLoaded', () => {
+async function handleConnectWallet() {
+  const provider = getProvider();
+  try {
+    const accs = await provider.request({ method: 'eth_requestAccounts' });
+    if (Array.isArray(accs) && accs.length > 0) {
+      currentAccount = accs[0];
+    }
+    updateStatusCard();
+  } catch (err) {
+    console.warn('Connect error:', err);
+  }
+}
+
+(window as any).connectWallet = handleConnectWallet;
+
+function initDapp() {
   // Bind Action Buttons
   document.getElementById('btn-claim-rewards')?.addEventListener('click', handleClaimRewards);
   document.getElementById('btn-sign-message')?.addEventListener('click', handleSignMessage);
@@ -418,18 +433,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-unsupported')?.addEventListener('click', handleUnsupportedMethod);
 
   // Bind Connect & Clear
-  document.getElementById('connect-wallet-btn')?.addEventListener('click', async () => {
-    const provider = getProvider();
-    try {
-      const accs = await provider.request({ method: 'eth_requestAccounts' });
-      if (Array.isArray(accs) && accs.length > 0) {
-        currentAccount = accs[0];
-      }
-      updateStatusCard();
-    } catch (err) {
-      console.warn('Connect error:', err);
-    }
-  });
+  document.getElementById('connect-wallet-btn')?.addEventListener('click', handleConnectWallet);
 
   document.getElementById('btn-clear-log')?.addEventListener('click', () => {
     const elReq = document.getElementById('log-last-request');
@@ -445,4 +449,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Initial Status Card Setup
   updateStatusCard();
-});
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', initDapp);
+} else {
+  initDapp();
+}
+

@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       rollupOptions: {
         input: {
+          main: resolve(__dirname, 'index.html'),
           sidepanel: resolve(__dirname, 'sidepanel/index.html'),
           demo: resolve(__dirname, 'demo/index.html'),
           fixtures: resolve(__dirname, 'demo/fixtures.html'),

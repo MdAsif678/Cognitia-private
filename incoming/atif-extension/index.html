@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cognitia® INTERCEPTOR — Never sign blind.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --ground: #f6f5f1;
+        --surface: #ffffff;
+        --line: #e6e4de;
+        --line-2: #c9c7c0;
+        --ink: #111111;
+        --text: #454541;
+        --muted: #66655f;
+        --green: #0d7d56;
+        --amber: #8f6410;
+        --red: #c22f1c;
+        --display: 'Inter Tight', 'Inter', -apple-system, sans-serif;
+        --sans: 'Inter', -apple-system, sans-serif;
+        --mono: 'JetBrains Mono', monospace;
+        --r-lg: 16px;
+        --r-md: 8px;
+        --r-pill: 999px;
+        --ease: cubic-bezier(0.32, 0.72, 0, 1);
+        --shadow-card: 0 24px 60px -28px rgba(17, 17, 17, 0.16), 0 1px 0 rgba(17, 17, 17, 0.04);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background-color: var(--ground);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 14px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      /* Navigation Bar */
+      .nav-bar {
+        height: 64px;
+        background: var(--ground);
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        text-decoration: none;
+      }
+
+      .brand-title {
+        font: 800 17px/1 var(--display);
+        letter-spacing: -0.02em;
+        color: var(--ink);
+      }
+
+      .brand-title sup {
+        font-size: 10px;
+        font-weight: 500;
+      }
+
+      .brand-sub {
+        font: 500 10.5px/1 var(--mono);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+      }
+
+      .nav-links a {
+        font-size: 13.5px;
+        font-weight: 500;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s var(--ease);
+      }
+
+      .nav-links a:hover {
+        color: var(--ink);
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        height: 44px;
+        padding: 0 22px;
+        border-radius: var(--r-pill);
+        font: 600 14px/1 var(--sans);
+        letter-spacing: -0.01em;
+        text-decoration: none;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: transform 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease);
+      }
+
+      .btn-primary {
+        background: var(--ink);
+        color: #ffffff;
+        border-color: var(--ink);
+      }
+
+      .btn-primary:hover {
+        background: #000000;
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: var(--ink);
+        border-color: var(--line-2);
+      }
+
+      .btn-secondary:hover {
+        border-color: var(--ink);
+        transform: translateY(-1px);
+      }
+
+      /* Container */
+      .container {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* Eyebrow Tags */
+      .eyebrow {
+        font: 500 11px/1.4 var(--mono);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+
+      .eyebrow-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--green);
+      }
+
+      /* Titles & Headings */
+      .section-title {
+        font: 800 clamp(42px, 6vw, 64px)/1.02 var(--display);
+        letter-spacing: -0.03em;
+        color: var(--ink);
+        margin-bottom: 20px;
+      }
+
+      .dot-green {
+        color: var(--green);
+      }
+
+      .dot-red {
+        color: var(--red);
+      }
+
+      /* Hero Section */
+      .hero-section {
+        padding: 90px 0 60px;
+      }
+
+      .hero-desc {
+        font-size: 16px;
+        line-height: 1.6;
+        color: var(--text);
+        max-width: 540px;
+        margin-bottom: 32px;
+      }
+
+      .hero-ctas {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 40px;
+      }
+
+      .pills-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font: 500 10.5px/1 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        border: 1px solid var(--line-2);
+        border-radius: var(--r-pill);
+        padding: 6px 14px;
+      }
+
+      /* Ticker Banner */
+      .ticker-bar {
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        padding: 16px 0;
+        overflow: hidden;
+        white-space: nowrap;
+        background: var(--ground);
+      }
+
+      .ticker-content {
+        display: inline-flex;
+        align-items: center;
+        gap: 24px;
+        font: 500 11px/1 var(--mono);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .ticker-star {
+        color: var(--green);
+        font-size: 14px;
+      }
+
+      /* Section Layout */
+      .section {
+        padding: 100px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .section-num {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      /* Live Preview Section */
+      .tabs-control {
+        display: inline-flex;
+        background: #e6e4de;
+        border-radius: var(--r-pill);
+        padding: 3px;
+        margin-bottom: 24px;
+      }
+
+      .tab-btn {
+        border: none;
+        background: transparent;
+        padding: 8px 20px;
+        border-radius: var(--r-pill);
+        font: 600 11px/1 var(--mono);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.2s var(--ease);
+      }
+
+      .tab-btn.active {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+
+      /* Browser Mockup Window */
+      .browser-mockup {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: var(--shadow-card);
+        overflow: hidden;
+        max-width: 640px;
+        margin: 0 auto;
+      }
+
+      .browser-bar {
+        height: 42px;
+        background: var(--ground);
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+      }
+
+      .browser-dots {
+        display: flex;
+        gap: 6px;
+      }
+
+      .browser-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .dot-r { background: #ef4444; }
+      .dot-y { background: #f59e0b; }
+      .dot-g { background: #10b981; }
+
+      .browser-url {
+        font: 400 12px/1 var(--mono);
+        color: var(--muted);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 4px 16px;
+      }
+
+      .browser-badge {
+        font: 500 10px/1 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--green);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .preview-body {
+        padding: 24px;
+      }
+
+      .preview-verdict {
+        font: 800 28px/1 var(--display);
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+
+      .preview-summary {
+        font-size: 13.5px;
+        color: var(--text);
+        margin-bottom: 20px;
+      }
+
+      .preview-kv {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 8px;
+        padding: 10px 0;
+        border-top: 1px solid var(--line);
+        font-size: 12.5px;
+      }
+
+      .preview-kv dt {
+        color: var(--muted);
+      }
+
+      .preview-kv dd {
+        font-family: var(--mono);
+        color: var(--ink);
+        text-align: right;
+      }
+
+      /* Features List */
+      .features-list {
+        display: flex;
+        flex-direction: column;
+        gap: 36px;
+        margin-top: 40px;
+      }
+
+      .feature-item {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      .feature-bullet {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-top: 8px;
+        flex: none;
+      }
+
+      .feature-title {
+        font: 700 20px/1.3 var(--sans);
+        color: var(--ink);
+        margin-bottom: 6px;
+      }
+
+      .feature-desc {
+        font-size: 15px;
+        line-height: 1.6;
+        color: var(--text);
+        max-width: 600px;
+      }
+
+      /* FAQ & Final CTA */
+      .cta-section {
+        padding: 120px 0;
+        text-align: center;
+      }
+
+      .cta-title {
+        font: 800 clamp(42px, 6vw, 64px)/1.05 var(--display);
+        letter-spacing: -0.03em;
+        color: var(--ink);
+        margin-bottom: 28px;
+      }
+
+      .cta-meta {
+        font: 500 11px/1 var(--mono);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-top: 16px;
+      }
+
+      /* Footer */
+      footer {
+        padding: 40px 0;
+        border-top: 1px solid var(--line);
+        background: var(--ground);
+      }
+
+      .footer-inner {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        font: 400 12px/1.4 var(--mono);
+        color: var(--muted);
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 20px;
+      }
+
+      .footer-links a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+
+      .footer-links a:hover {
+        color: var(--ink);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Navigation Bar -->
+    <header class="nav-bar">
+      <a href="/" class="brand">
+        <span class="brand-title">Cognitia<sup>®</sup></span>
+        <span class="brand-sub">INTERCEPTOR</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#preview">Preview</a>
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+
+      <div>
+        <a href="/cognitia-extension.zip" download="cognitia-extension.zip" class="btn btn-primary">Add to Chrome →</a>
+      </div>
+    </header>
+
+    <main>
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <div class="container">
+          <div class="eyebrow">
+            <span class="eyebrow-dot"></span>
+            <span>WALLET SECURITY · BEFORE THE CLICK</span>
+          </div>
+
+          <h1 class="section-title">
+            Never sign<br />
+            blind<span class="dot-green">.</span>
+          </h1>
+
+          <p class="hero-desc">
+            Cognitia sits between every dapp and your wallet — simulating each request on a private chain fork and
+            translating it into plain English before MetaMask ever opens.
+          </p>
+
+          <div class="hero-ctas">
+            <a href="/cognitia-extension.zip" download="cognitia-extension.zip" class="btn btn-primary">Add to Chrome — free →</a>
+            <a href="#preview" class="btn btn-secondary">Try the live preview</a>
+          </div>
+
+          <div class="pills-row">
+            <span class="pill">RUNS LOCALLY</span>
+            <span class="pill">NOTHING LEAVES YOUR MACHINE</span>
+            <span class="pill">VERDICT IN SECONDS</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ticker Banner -->
+      <div class="ticker-bar">
+        <div class="ticker-content">
+          <span class="ticker-star">✶</span> <span>HIDDEN ALLOWANCES</span>
+          <span class="ticker-star">✶</span> <span>SPOOFED CONTRACTS</span>
+          <span class="ticker-star">✶</span> <span>FAKE AIRDROPS</span>
+          <span class="ticker-star">✶</span> <span>BLIND SIGNATURES</span>
+          <span class="ticker-star">✶</span> <span>KNOWN DRAINERS</span>
+          <span class="ticker-star">✶</span> <span>SETAPPROVALFORALL SCAMS</span>
+        </div>
+      </div>
+
+      <!-- Live Preview Section -->
+      <section class="section" id="preview">
+        <div class="container">
+          <div class="eyebrow">
+            <span class="section-num">01</span>
+            <span>· LIVE PREVIEW</span>
+          </div>
+
+          <h2 class="section-title">
+            Poke the real interface<span class="dot-green">.</span>
+          </h2>
+
+          <p class="hero-desc">
+            This is the exact screen you'll see on every request, running on sample data. Switch scenarios — safe swap,
+            phishing drainer, reverting transaction, or backend timeout.
+          </p>
+
+          <!-- Tab Controls -->
+          <div class="tabs-control">
+            <button class="tab-btn active" onclick="switchPreview('safe', this)">SAFE</button>
+            <button class="tab-btn" onclick="switchPreview('critical', this)">CRITICAL</button>
+            <button class="tab-btn" onclick="switchPreview('reverted', this)">REVERTED</button>
+            <button class="tab-btn" onclick="switchPreview('unverified', this)">UNVERIFIED</button>
+          </div>
+
+          <!-- Interactive Browser Mockup Window -->
+          <div class="browser-mockup">
+            <div class="browser-bar">
+              <div class="browser-dots">
+                <span class="browser-dot dot-r"></span>
+                <span class="browser-dot dot-y"></span>
+                <span class="browser-dot dot-g"></span>
+              </div>
+              <div class="browser-url">app.uniswap.org</div>
+              <div class="browser-badge">● PROTECTED</div>
+            </div>
+
+            <div class="preview-body" id="preview-content">
+              <div class="preview-verdict" style="color: var(--green);">All clear.</div>
+              <p class="preview-summary">No lingering permissions, hidden allowances, or deferred approvals.</p>
+
+              <div class="preview-kv">
+                <dt>04 WHAT WE FOUND</dt>
+                <dd>0 threats</dd>
+              </div>
+              <div style="font-size: 13px; color: var(--green); padding: 8px 0;">
+                ✓ No drain patterns or known exploits detected.
+              </div>
+
+              <div class="preview-kv" style="margin-top: 14px;">
+                <dt>05 HOW WE CHECKED</dt>
+                <dd>Simulated</dd>
+              </div>
+              <div style="font-size: 13px; color: var(--text); padding: 8px 0;">
+                ✓ Fork simulation passed — executed in an isolated sandbox at block 19842100.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features Section -->
+      <section class="section" id="features">
+        <div class="container">
+          <div class="eyebrow">
+            <span class="section-num">02</span>
+            <span>· FEATURES</span>
+          </div>
+
+          <h2 class="section-title">
+            Three layers deep.<br />
+            Zero jargon<span class="dot-green">.</span>
+          </h2>
+
+          <div class="features-list">
+            <div class="feature-item">
+              <div class="feature-bullet" style="background: var(--green);"></div>
+              <div>
+                <h3 class="feature-title">Forked, executed, proven.</h3>
+                <p class="feature-desc">
+                  Every transaction is replayed on a private fork of the real chain at the latest block. You see the
+                  actual outcome — success or revert — before spending a single wei of gas.
+                </p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-bullet" style="background: var(--amber);"></div>
+              <div>
+                <h3 class="feature-title">Cross-checked against the underbelly.</h3>
+                <p class="feature-desc">
+                  Recipients are screened against known drainer networks, malicious approval patterns, and call-trace
+                  anomalies. Findings arrive with evidence and a confidence score.
+                </p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <div class="feature-bullet" style="background: var(--ink);"></div>
+              <div>
+                <h3 class="feature-title">Plain English, always.</h3>
+                <p class="feature-desc">
+                  The verdict is one sentence, big enough to read at a glance: <em>All clear. Stop right there.</em> Every
+                  technical detail stays one tap away in the developer drawer.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Final CTA Section -->
+      <section class="cta-section" id="faq">
+        <div class="container">
+          <div class="eyebrow" style="justify-content: center;">
+            <span class="section-num">04</span>
+            <span>· FAQ</span>
+          </div>
+
+          <h2 class="cta-title">
+            Install before the<br />
+            next phish lands<span class="dot-red">.</span>
+          </h2>
+
+          <a href="/cognitia-extension.zip" download="cognitia-extension.zip" class="btn btn-primary" style="height: 52px; padding: 0 32px; font-size: 16px;">
+            Add to Chrome →
+          </a>
+
+          <div class="cta-meta">FREE · CHROME · 2-MINUTE SETUP · NO ACCOUNT</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+      <div class="container footer-inner">
+        <div>
+          <strong>Cognitia<sup>®</sup> INTERCEPTOR</strong> &nbsp;·&nbsp; Made for people who read the fine print.
+        </div>
+        <div class="footer-links">
+          <a href="#privacy">Privacy</a>
+          <a href="#github">GitHub</a>
+          <a href="#changelog">Changelog</a>
+        </div>
+        <div style="flex: 0 0 100%; border-top: 1px solid var(--line); padding-top: 16px; margin-top: 8px; display: flex; justify-content: space-between;">
+          <span>© 2025 COGNITIA</span>
+          <span>NOT FINANCIAL ADVICE — JUST BETTER READING.</span>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      function switchPreview(scenario, btn) {
+        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const content = document.getElementById('preview-content');
+        if (scenario === 'safe') {
+          content.innerHTML = `
+            <div class="preview-verdict" style="color: var(--green);">All clear.</div>
+            <p class="preview-summary">No lingering permissions, hidden allowances, or deferred approvals.</p>
+            <div class="preview-kv"><dt>04 WHAT WE FOUND</dt><dd>0 threats</dd></div>
+            <div style="font-size: 13px; color: var(--green); padding: 8px 0;">✓ No drain patterns or known exploits detected.</div>
+            <div class="preview-kv" style="margin-top: 14px;"><dt>05 HOW WE CHECKED</dt><dd>Simulated</dd></div>
+            <div style="font-size: 13px; color: var(--text); padding: 8px 0;">✓ Fork simulation passed — executed in an isolated sandbox at block 19842100.</div>
+          `;
+        } else if (scenario === 'critical') {
+          content.innerHTML = `
+            <div class="preview-verdict" style="color: var(--red);">Stop right there.</div>
+            <p class="preview-summary">This request grants unlimited approval to an unverified drainer contract.</p>
+            <div class="preview-kv"><dt>04 WHAT WE FOUND</dt><dd style="color: var(--red);">1 CRITICAL THREAT</dd></div>
+            <div style="font-size: 13px; color: var(--red); padding: 8px 0;">⚠ Malicious setApprovalForAll detected for spender 0x7099...79C8.</div>
+            <div class="preview-kv" style="margin-top: 14px;"><dt>05 HOW WE CHECKED</dt><dd>Trace Analysis</dd></div>
+            <div style="font-size: 13px; color: var(--text); padding: 8px 0;">⚠ Asset outflow detected without receipt of counter-value.</div>
+          `;
+        } else if (scenario === 'reverted') {
+          content.innerHTML = `
+            <div class="preview-verdict" style="color: var(--amber);">Transaction will fail.</div>
+            <p class="preview-summary">Simulation indicates this transaction will revert on-chain, wasting gas fees.</p>
+            <div class="preview-kv"><dt>04 WHAT WE FOUND</dt><dd style="color: var(--amber);">REVERT ON FORK</dd></div>
+            <div style="font-size: 13px; color: var(--amber); padding: 8px 0;">⚠ Execution reverted: ExecutionFailed("Execution reverted").</div>
+          `;
+        } else if (scenario === 'unverified') {
+          content.innerHTML = `
+            <div class="preview-verdict" style="color: var(--muted);">Analysis unavailable.</div>
+            <p class="preview-summary">The simulation engine timed out. Proceed only if you completely trust this site.</p>
+            <div class="preview-kv"><dt>04 WHAT WE FOUND</dt><dd>TIMEOUT</dd></div>
+            <div style="font-size: 13px; color: var(--muted); padding: 8px 0;">ℹ Risk engine did not respond within timeout window.</div>
+          `;
+        }
+      }
+    </script>
+  </body>
+</html>

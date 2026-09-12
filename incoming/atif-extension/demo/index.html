@@ -3,218 +3,324 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pre-Execution Interceptor - Demo DApp</title>
+    <title>Cognitia® INTERCEPTOR — Interactive Demo DApp</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <style>
+      :root {
+        color-scheme: light;
+        --ground: #f6f5f1;
+        --surface: #ffffff;
+        --line: #e6e4de;
+        --line-2: #c9c7c0;
+        --ink: #111111;
+        --text: #454541;
+        --muted: #66655f;
+        --green: #0d7d56;
+        --amber: #8f6410;
+        --red: #c22f1c;
+        --display: 'Inter Tight', 'Inter', -apple-system, sans-serif;
+        --sans: 'Inter', -apple-system, sans-serif;
+        --mono: 'JetBrains Mono', monospace;
+        --r-lg: 16px;
+        --r-md: 8px;
+        --r-pill: 999px;
+        --ease: cubic-bezier(0.32, 0.72, 0, 1);
+        --shadow-card: 0 24px 60px -28px rgba(17, 17, 17, 0.14), 0 1px 0 rgba(17, 17, 17, 0.04);
+      }
       * {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
       }
       body {
-        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-        background-color: #080c16;
-        color: #f1f5f9;
+        margin: 0;
+        background-color: var(--ground);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 14px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
         min-height: 100vh;
-        padding: 24px 20px 60px;
+        padding-bottom: 60px;
       }
-      .container {
-        max-width: 960px;
-        margin: 0 auto;
-      }
-      header {
+
+      /* Navigation Bar matching Landing Page */
+      .nav-bar {
+        height: 64px;
+        background: var(--ground);
+        border-bottom: 1px solid var(--line);
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        align-items: center;
-        padding-bottom: 20px;
-        border-bottom: 1px solid #1e293b;
-        margin-bottom: 24px;
+        padding: 0 40px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
       }
-      .logo-group {
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        text-decoration: none;
+      }
+      .brand-title {
+        font: 800 17px/1 var(--display);
+        letter-spacing: -0.02em;
+        color: var(--ink);
+      }
+      .brand-title sup {
+        font-size: 10px;
+        font-weight: 500;
+      }
+      .brand-sub {
+        font: 500 10.5px/1 var(--mono);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .nav-links {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 24px;
       }
-      .logo-icon {
-        font-size: 28px;
-        background: rgba(99, 102, 241, 0.15);
-        border: 1px solid rgba(99, 102, 241, 0.3);
-        width: 44px;
-        height: 44px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .nav-links a {
+        font-size: 13.5px;
+        font-weight: 500;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s var(--ease);
       }
-      h1 {
-        font-size: 20px;
-        font-weight: 700;
-        color: #f8fafc;
-        letter-spacing: -0.3px;
+      .nav-links a:hover {
+        color: var(--ink);
       }
-      .tagline {
-        font-size: 12px;
-        color: #94a3b8;
+
+      .container {
+        max-width: 980px;
+        margin: 40px auto 0;
+        padding: 0 24px;
       }
-      .btn {
-        font-family: 'Outfit', sans-serif;
-        font-size: 13px;
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 10px 18px;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        border: none;
-      }
-      .btn-primary {
-        background: #4f46e5;
-        color: #ffffff;
-      }
-      .btn-primary:hover {
-        background: #4338ca;
-      }
-      .btn-secondary {
-        background: #1e293b;
-        color: #cbd5e1;
-        border: 1px solid #334155;
-      }
-      .btn-secondary:hover {
-        background: #334155;
-      }
-      .btn-danger {
-        background: rgba(239, 68, 68, 0.15);
-        color: #ef4444;
-        border: 1px solid #ef4444;
-      }
-      .btn-danger:hover {
-        background: rgba(239, 68, 68, 0.25);
-      }
-      .btn-action {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 16px;
-        border-radius: 12px;
-        background: #131b2e;
-        border: 1px solid #1e293b;
-        color: #f8fafc;
-        text-align: left;
-        cursor: pointer;
-        transition: transform 0.1s ease, border-color 0.15s ease;
-      }
-      .btn-action:hover {
-        transform: translateY(-2px);
-        border-color: #4f46e5;
-      }
-      .btn-action-title {
-        font-size: 15px;
-        font-weight: 700;
-        margin-bottom: 4px;
+
+      /* Hero Section */
+      .eyebrow {
+        font: 500 11px/1.4 var(--mono);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
         display: flex;
         align-items: center;
         gap: 8px;
+        margin-bottom: 16px;
       }
-      .btn-action-subtitle {
-        font-size: 11px;
-        color: #94a3b8;
-        font-family: 'JetBrains Mono', monospace;
+      .eyebrow-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--green);
       }
-      .grid-actions {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
+      .hero-section {
+        margin-bottom: 32px;
       }
+      .hero-title {
+        font: 800 clamp(36px, 5vw, 52px)/1.05 var(--display);
+        letter-spacing: -0.03em;
+        color: var(--ink);
+        margin-bottom: 10px;
+      }
+      .hero-sub {
+        font-size: 15px;
+        color: var(--text);
+      }
+
+      /* Cards */
       .card {
-        background: #0f172a;
-        border: 1px solid #1e293b;
-        border-radius: 12px;
-        padding: 18px;
-        margin-bottom: 20px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-card);
+        padding: 24px;
+        margin-bottom: 24px;
       }
       .card-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 14px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #1e293b;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--line);
       }
       .card-title {
-        font-size: 13px;
-        font-weight: 700;
+        font: 500 10.5px/1.4 var(--mono);
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #818cf8;
+        color: var(--muted);
       }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        height: 42px;
+        padding: 0 20px;
+        border-radius: var(--r-pill);
+        font: 600 13.5px/1 var(--sans);
+        letter-spacing: -0.01em;
+        text-decoration: none;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: transform 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease);
+      }
+      .btn-primary {
+        background: var(--ink);
+        color: #ffffff;
+        border-color: var(--ink);
+      }
+      .btn-primary:hover {
+        background: #000000;
+        transform: translateY(-1px);
+      }
+      .btn-secondary {
+        background: var(--surface);
+        color: var(--ink);
+        border-color: var(--line-2);
+      }
+      .btn-secondary:hover {
+        border-color: var(--ink);
+        transform: translateY(-1px);
+      }
+      .btn-sm {
+        height: 32px;
+        padding: 0 14px;
+        font-size: 11.5px;
+      }
+
+      /* Status Grid */
       .status-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 12px;
       }
       .status-item {
-        background: #131b2e;
-        border: 1px solid #1e293b;
-        border-radius: 8px;
-        padding: 10px 12px;
+        background: var(--ground);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 12px 14px;
       }
       .status-label {
-        font-size: 11px;
-        color: #64748b;
-        font-weight: 500;
+        font: 500 10px/1.4 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
         margin-bottom: 4px;
       }
       .status-value {
-        font-size: 12px;
-        font-weight: 600;
-        color: #f1f5f9;
-        font-family: 'JetBrains Mono', monospace;
+        font: 500 12px/1.4 var(--mono);
+        color: var(--ink);
         word-break: break-all;
       }
-      .code-box {
-        background: #080d1a;
-        border: 1px solid #1e293b;
-        border-radius: 8px;
-        padding: 12px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 11px;
-        color: #cbd5e1;
-        max-height: 180px;
-        overflow-y: auto;
-        white-space: pre-wrap;
-      }
-      .badge {
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 700;
+
+      /* Interactive Action Buttons Grid */
+      .section-heading {
+        font: 500 10.5px/1.4 var(--mono);
+        letter-spacing: 0.14em;
         text-transform: uppercase;
+        color: var(--muted);
+        margin: 32px 0 14px;
+      }
+      .grid-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+      .btn-action {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 18px;
+        border-radius: var(--r-lg);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow-card);
+        color: var(--ink);
+        text-align: left;
+        cursor: pointer;
+        transition: transform 0.2s var(--ease), border-color 0.2s var(--ease);
+      }
+      .btn-action:hover {
+        transform: translateY(-2px);
+        border-color: var(--ink);
+      }
+      .btn-action-title {
+        font: 700 15px/1.3 var(--display);
+        letter-spacing: -0.01em;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+      }
+      .btn-action-subtitle {
+        font: 400 11.5px/1.4 var(--mono);
+        color: var(--muted);
+      }
+
+      /* Badges & Chips */
+      .badge {
+        display: inline-block;
+        font: 500 10px/1 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        border-radius: var(--r-pill);
+        padding: 4px 10px;
+        white-space: nowrap;
       }
       .badge-success {
-        background: rgba(34, 197, 94, 0.15);
-        color: #4ade80;
+        background: rgba(13, 125, 86, 0.1);
+        color: var(--green);
+        border: 1px solid rgba(13, 125, 86, 0.25);
       }
       .badge-warning {
-        background: rgba(245, 158, 11, 0.15);
-        color: #f59e0b;
+        background: rgba(143, 100, 16, 0.1);
+        color: var(--amber);
+        border: 1px solid rgba(143, 100, 16, 0.25);
       }
       .badge-danger {
-        background: rgba(239, 68, 68, 0.15);
-        color: #ef4444;
+        background: rgba(194, 47, 28, 0.1);
+        color: var(--red);
+        border: 1px solid rgba(194, 47, 28, 0.25);
       }
       .badge-info {
-        background: rgba(56, 189, 248, 0.15);
-        color: #38bdf8;
+        background: var(--ground);
+        color: var(--ink);
+        border: 1px solid var(--line-2);
       }
+
+      /* Code boxes */
+      .code-box {
+        background: var(--ground);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 14px;
+        font: 400 11.5px/1.5 var(--mono);
+        color: var(--text);
+        max-height: 200px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+
+      /* Acceptance Criteria */
       .acceptance-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 14px;
       }
       @media (max-width: 768px) {
         .acceptance-grid {
@@ -222,47 +328,64 @@
         }
       }
       .acceptance-item {
-        background: #131b2e;
-        border: 1px solid #1e293b;
-        border-radius: 8px;
-        padding: 10px 12px;
-        font-size: 12px;
-        line-height: 1.4;
+        background: var(--ground);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 14px 16px;
       }
       .acceptance-title {
-        font-weight: 700;
-        color: #f8fafc;
-        margin-bottom: 2px;
+        font: 600 13.5px/1.3 var(--sans);
+        color: var(--ink);
+        margin-bottom: 4px;
       }
       .acceptance-desc {
-        color: #94a3b8;
-        font-size: 11px;
+        color: var(--text);
+        font-size: 12px;
+        line-height: 1.5;
       }
+
       .simulation-bar {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
-        margin-top: 12px;
+        margin-top: 14px;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <!-- DApp Header -->
-      <header>
-        <div class="logo-group">
-          <div class="logo-icon">🛡️</div>
-          <div>
-            <h1>Pre-Execution Interceptor - Demo DApp</h1>
-            <p class="tagline">Interactive Acceptance Criteria & Wallet Simulation Testbed</p>
-          </div>
-        </div>
-        <div>
-          <button id="connect-wallet-btn" class="btn btn-primary">Connect Wallet</button>
-        </div>
-      </header>
+    <!-- Top Navigation Bar matching Landing Page -->
+    <header class="nav-bar">
+      <a href="/" class="brand">
+        <span class="brand-title">Cognitia<sup>®</sup></span>
+        <span class="brand-sub">INTERCEPTOR / DEMO DAPP</span>
+      </a>
 
-      <!-- 1. Wallet & Provider Status -->
+      <nav class="nav-links">
+        <a href="/">← Back to Landing Page</a>
+        <a href="/demo/analysis.html">Detailed Analysis ↗</a>
+      </nav>
+
+      <div>
+        <button id="connect-wallet-btn" onclick="window.connectWallet && window.connectWallet()" class="btn btn-primary">Connect Wallet</button>
+        <a href="/cognitia-extension.zip" download="cognitia-extension.zip" class="btn btn-secondary" style="margin-left: 8px;">Add to Chrome →</a>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Hero Title -->
+      <div class="hero-section">
+        <div class="eyebrow">
+          <span class="eyebrow-dot"></span>
+          <span>DAPP TESTBED · PRE-EXECUTION INTERCEPTOR</span>
+        </div>
+
+        <h1 class="hero-title">
+          Interactive Testbed<span style="color: var(--green);">.</span>
+        </h1>
+        <p class="hero-sub">Acceptance Criteria & Pre-Execution Interceptor Simulation Environment</p>
+      </div>
+
+      <!-- 1. Wallet & Provider Status Card -->
       <div class="card">
         <div class="card-header">
           <span class="card-title">Wallet & Provider Status</span>
@@ -288,10 +411,8 @@
         </div>
       </div>
 
-      <!-- 2. The 6 Required Test Buttons -->
-      <h3 style="font-size: 14px; font-weight: 700; color: #cbd5e1; margin-bottom: 12px; text-transform: uppercase;">
-        Interactive Signing & Transaction Actions
-      </h3>
+      <!-- 2. Interactive Signing & Transaction Actions -->
+      <div class="section-heading">Interactive Signing & Transaction Actions</div>
       <div class="grid-actions">
         <!-- 1. Claim Rewards -->
         <button id="btn-claim-rewards" class="btn-action">
@@ -352,49 +473,53 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title">Live Request & Result Monitor</span>
-          <button id="btn-clear-log" class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;">Clear</button>
+          <button id="btn-clear-log" class="btn btn-secondary btn-sm">Clear</button>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div>
-            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">LAST REQUEST</div>
+            <div style="font: 500 10px/1.4 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">
+              LAST REQUEST
+            </div>
             <div id="log-last-request" class="code-box">No requests sent yet. Click an action above.</div>
           </div>
           <div>
-            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">LAST RESULT / ERROR</div>
+            <div style="font: 500 10px/1.4 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">
+              LAST RESULT / ERROR
+            </div>
             <div id="log-last-result" class="code-box">Standby. Awaiting user approval or wallet response.</div>
           </div>
         </div>
       </div>
 
       <!-- 4. Debug Panel: INTERCEPTOR STATUS -->
-      <div class="card" style="border-color: #3b82f6;">
+      <div class="card">
         <div class="card-header">
-          <span class="card-title" style="color: #60a5fa;">Debug Panel: INTERCEPTOR STATUS</span>
+          <span class="card-title">Debug Panel: INTERCEPTOR STATUS</span>
           <span id="interceptor-active-badge" class="badge badge-success">Active</span>
         </div>
         <div class="status-grid">
           <div class="status-item">
-            <div class="status-label">Provider:</div>
+            <div class="status-label">Provider</div>
             <div id="dbg-provider" class="status-value">MetaMask / window.ethereum</div>
           </div>
           <div class="status-item">
-            <div class="status-label">Interceptor:</div>
+            <div class="status-label">Interceptor</div>
             <div id="dbg-interceptor" class="status-value">Proxy Wrapped (MAIN World)</div>
           </div>
           <div class="status-item">
-            <div class="status-label">Pending request:</div>
+            <div class="status-label">Pending request</div>
             <div id="dbg-pending" class="status-value">None (0)</div>
           </div>
           <div class="status-item">
-            <div class="status-label">Analysis:</div>
+            <div class="status-label">Analysis</div>
             <div id="dbg-analysis" class="status-value">IDLE</div>
           </div>
           <div class="status-item">
-            <div class="status-label">Forwarded:</div>
+            <div class="status-label">Forwarded</div>
             <div id="dbg-forwarded" class="status-value">0 calls</div>
           </div>
           <div class="status-item">
-            <div class="status-label">Rejected:</div>
+            <div class="status-label">Rejected</div>
             <div id="dbg-rejected" class="status-value">0 rejections</div>
           </div>
         </div>
@@ -436,18 +561,18 @@
           </div>
         </div>
 
-        <div style="margin-top: 18px; border-top: 1px solid #1e293b; padding-top: 14px;">
-          <div style="font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 8px;">
+        <div style="margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px;">
+          <div style="font: 500 10.5px/1.4 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px;">
             SIMULATION TOOLS (For Testing D, E & F without switching physical wallets)
           </div>
           <div class="simulation-bar">
-            <button id="sim-account-change" class="btn btn-secondary">
+            <button id="sim-account-change" class="btn btn-secondary btn-sm">
               👤 Simulate accountsChanged (Test D)
             </button>
-            <button id="sim-chain-change" class="btn btn-secondary">
+            <button id="sim-chain-change" class="btn btn-secondary btn-sm">
               🌐 Simulate chainChanged (Test E)
             </button>
-            <button id="sim-toggle-mock" class="btn btn-secondary">
+            <button id="sim-toggle-mock" class="btn btn-secondary btn-sm">
               ⚙️ Toggle In-Page Mock Provider
             </button>
           </div>
