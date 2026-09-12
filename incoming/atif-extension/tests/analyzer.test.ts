@@ -40,7 +40,7 @@ function makeSnapshot(overrides: Partial<PendingRequestSnapshot> = {}): PendingR
   return {
     requestId: `req_${Math.random().toString(36).slice(2, 10)}`,
     timestamp: Date.now(),
-    origin: 'https://app.uniswap.org',
+    origin: 'https://app.lumaswap.io',
     method: 'eth_sendTransaction',
     rawParams: [{ to: '0x1111111111111111111111111111111111111111', value: '0x10' }],
     chainId: '0x1',
@@ -72,7 +72,7 @@ function makeReport(requestId: string, overrides: Record<string, unknown> = {}):
     immediateChanges: [
       {
         type: 'native_transfer',
-        asset: 'ETH',
+        asset: 'AUR',
         from: ACCOUNT,
         to: '0x1111111111111111111111111111111111111111',
         amount: '0x10',
@@ -200,7 +200,7 @@ export async function runAnalyzerTests(): Promise<TestResult[]> {
       const body = recorder.bodies[0];
       assert(Boolean(body), 'Request body was not valid JSON');
       assert(body!.requestId === snapshot.requestId, 'requestId missing from payload');
-      assert(body!.origin === 'https://app.uniswap.org', 'origin missing from payload');
+      assert(body!.origin === 'https://app.lumaswap.io', 'origin missing from payload');
       assert(body!.chainId === 11155111, `chainId must be numeric 11155111, got ${JSON.stringify(body!.chainId)}`);
       assert(body!.account === ACCOUNT, 'account missing from payload');
       assert(body!.method === 'eth_sendTransaction', 'method missing from payload');
@@ -233,7 +233,7 @@ export async function runAnalyzerTests(): Promise<TestResult[]> {
             },
           ],
           potentialExposure: [
-            { kind: 'token_allowance', asset: 'USDC', description: 'Unlimited allowance redeemable by spender.' },
+            { kind: 'token_allowance', asset: 'NUSD', description: 'Unlimited allowance redeemable by spender.' },
           ],
         })
       )

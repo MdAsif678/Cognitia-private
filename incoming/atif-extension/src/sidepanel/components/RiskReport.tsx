@@ -218,7 +218,7 @@ export const RiskReport: React.FC<RiskReportProps> = ({
             {details.targetFormatted}
           </dd>
           <dt>Value</dt>
-          <dd className={details.valueEth !== '0 ETH' ? 'strong' : undefined}>{details.valueEth}</dd>
+          <dd className={details.valueEth !== '0 AUR' ? 'strong' : undefined}>{details.valueEth}</dd>
           <dt>Origin</dt>
           <dd className="mono">{snapshot.origin}</dd>
         </dl>
@@ -600,7 +600,7 @@ function formatAddress(addr?: string, prefixLen = 6, suffixLen = 4): string {
 function formatChangeType(type: string): string {
   switch (type) {
     case 'native_transfer':
-      return 'Native ETH Transfer';
+      return 'Native AUR Transfer';
     case 'erc20_transfer':
       return 'ERC-20 Token Transfer';
     case 'erc20_approve':
@@ -647,10 +647,10 @@ function parseSigningDetails(snapshot: PendingRequestSnapshot): {
   if (method === 'eth_signTypedData_v4') methodLabel = 'Sign typed data (EIP-712)';
   if (method === 'personal_sign') methodLabel = 'Sign message';
 
-  let chainLabel = 'Ethereum Mainnet';
-  if (snapshot.chainId === '0x89' || snapshot.chainId === '137') chainLabel = 'Polygon';
-  else if (snapshot.chainId === '0xaa36a7' || snapshot.chainId === '11155111') chainLabel = 'Sepolia';
-  else if (snapshot.chainId === '0x7a69' || snapshot.chainId === '31337') chainLabel = 'Local Anvil';
+  let chainLabel = 'Aurum Mainnet';
+  if (snapshot.chainId === '0x89' || snapshot.chainId === '137') chainLabel = 'Nimbus Chain';
+  else if (snapshot.chainId === '0xaa36a7' || snapshot.chainId === '11155111') chainLabel = 'Aurum Testnet';
+  else if (snapshot.chainId === '0x7a69' || snapshot.chainId === '31337') chainLabel = 'Aurum Local';
   else if (snapshot.chainId && snapshot.chainId !== '0x1' && snapshot.chainId !== '1') chainLabel = `Chain ${snapshot.chainId}`;
 
   const accountFormatted = snapshot.account
@@ -659,7 +659,7 @@ function parseSigningDetails(snapshot: PendingRequestSnapshot): {
 
   let targetFormatted = 'Contract / recipient';
   let targetFull: string | undefined;
-  let valueEth = '0 ETH';
+  let valueEth = '0 AUR';
   let messageHeader: string | undefined;
   let messagePreview: string | undefined;
 
@@ -675,9 +675,9 @@ function parseSigningDetails(snapshot: PendingRequestSnapshot): {
       if (tx.value.startsWith('0x')) {
         const wei = BigInt(tx.value);
         const ethVal = Number(wei) / 1e18;
-        valueEth = `${ethVal} ETH`;
+        valueEth = `${ethVal} AUR`;
       } else {
-        valueEth = `${tx.value} ETH`;
+        valueEth = `${tx.value} AUR`;
       }
     }
     if (typeof tx.data === 'string' && tx.data.length > 2) {

@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * The panel's entire icon set: eleven 1.6px-stroke glyphs on a 24px grid.
+ * The panel's entire icon set: twelve 1.6px-stroke glyphs on a 24px grid.
  * Kept inline so the extension ships no icon dependency and renders identically
  * in the side panel, the demo pages, and server-side test rendering.
  */
@@ -16,7 +16,8 @@ export type IconName =
   | 'info'
   | 'clock'
   | 'wallet'
-  | 'ban';
+  | 'ban'
+  | 'list';
 
 const GLYPHS: Record<IconName, React.ReactNode> = {
   shield: <path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3z" />,
@@ -71,6 +72,13 @@ const GLYPHS: Record<IconName, React.ReactNode> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="M6 6l12 12" />
+    </>
+  ),
+  list: (
+    <>
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h10" />
     </>
   ),
 };

@@ -22,7 +22,7 @@ const DEMO_TYPED_DATA = {
   },
   primaryType: 'Permit',
   domain: {
-    name: 'USD Coin',
+    name: 'Nova USD',
     version: '2',
     chainId: 1,
     verifyingContract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
@@ -74,7 +74,7 @@ class InPageMockEthereumProvider {
       case 'eth_chainId':
         return currentChainId;
       case 'eth_call':
-        return '0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000045553444300000000000000000000000000000000000000000000000000000000'; // "USDC"
+        return '0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000044e55534400000000000000000000000000000000000000000000000000000000'; // "NUSD"
       case 'eth_sendTransaction':
         return '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b';
       case 'personal_sign':
@@ -152,7 +152,7 @@ function updateStatusCard() {
 
   if (elProvider) elProvider.textContent = providerName;
   if (elAccount) elAccount.textContent = currentAccount ? `${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}` : 'Not Connected';
-  if (elChain) elChain.textContent = `${currentChainId} (${currentChainId === '0x1' ? 'Ethereum Mainnet' : 'Polygon / Other'})`;
+  if (elChain) elChain.textContent = `${currentChainId} (${currentChainId === '0x1' ? 'Aurum Mainnet' : 'Nimbus Chain / Other'})`;
   if (elBadge) {
     if (currentAccount) {
       elBadge.textContent = 'Connected';
@@ -306,7 +306,7 @@ async function handleSendTransaction() {
     {
       from: account,
       to: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-      value: '0x5af3107a4000', // 0.0001 ETH
+      value: '0x5af3107a4000', // 0.0001 AUR
     },
   ];
 
@@ -403,7 +403,7 @@ function simulateAccountChange() {
 }
 
 function simulateChainChange() {
-  const newChain = currentChainId === '0x1' ? '0x89' : '0x1'; // Toggle between Mainnet and Polygon
+  const newChain = currentChainId === '0x1' ? '0x89' : '0x1'; // Toggle between Aurum Mainnet and Nimbus Chain
   currentChainId = newChain;
   const provider = getProvider();
 

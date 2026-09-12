@@ -64,7 +64,7 @@ const server = http.createServer((req, res) => {
             result = block;
             break;
           case 'eth_getBalance':
-            result = '0x38d7ea4c680000'; // 1000 ETH
+            result = '0x38d7ea4c680000'; // 1000 AUR
             break;
           case 'eth_getCode':
             result = '0x';
@@ -110,5 +110,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Anvil 31337 RPC Server active on http://127.0.0.1:${PORT}`);
+  console.log(`Aurum Local 31337 RPC Server active on http://127.0.0.1:${PORT}`);
 });

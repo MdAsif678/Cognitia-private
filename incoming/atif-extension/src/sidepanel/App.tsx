@@ -14,6 +14,7 @@ import { StaleReport } from './components/StaleReport';
 import { Rejected } from './components/Rejected';
 import { Forwarding } from './components/Forwarding';
 import { Failed } from './components/Failed';
+import { LogView } from './components/LogView';
 import './styles.css';
 
 const SUPPORTED_METHODS = ['eth_sendTransaction', 'eth_signTypedData_v4', 'personal_sign'];
@@ -24,7 +25,8 @@ export const App: React.FC = () => {
   const [statusError, setStatusError] = useState<string | undefined>();
   const view = useRef<HTMLElement>(null);
   useEffect(() => { view.current?.scrollTo(0, 0); }, [activeRequest?.requestId, status]);
-
+  // The log replaces the live view in place; the interception flow underneath is untouched.
+  const [showLog, setShowLog] = useState(false);
   // Hydrate active request from service worker on mount
   useEffect(() => {
     const fetchActive = async () => {
@@ -119,14 +121,28 @@ export const App: React.FC = () => {
             <div className="brand-sub">Wallet protection</div>
           </div>
         </div>
-        <div className="live" data-mode="live" role="status">
-          <span className="live-dot" aria-hidden="true" />
-          {['INTERCEPTED', 'ANALYZING'].includes(status) ? 'Analyzing' : status === 'ANALYSIS_READY' ? 'Review' : 'Active'}
+        <div className="topbar-end">
+          <div className="live" data-mode="live" role="status">
+            <span className="live-dot" aria-hidden="true" />
+            {['INTERCEPTED', 'ANALYZING'].includes(status) ? 'Analyzing' : status === 'ANALYSIS_READY' ? 'Review' : 'Active'}
+          </div>
+          <button
+            type="button"
+            className="log-toggle"
+            aria-pressed={showLog}
+            aria-label={showLog ? 'Close the request log' : 'Open the request log'}
+            onClick={() => setShowLog((open) => !open)}
+          >
+            <Icon name={showLog ? 'x' : 'list'} size={13} />
+            <span>Log</span>
+          </button>
         </div>
       </header>
 
       <main className="view" ref={view}>
-        {status === 'IDLE' && (
+        {showLog && <LogView />}
+
+        {!showLog && status === 'IDLE' && (
           <section className="idle enter">
             <span className="idle-mark">
               <Icon name="lock" size={20} />
@@ -152,9 +168,11 @@ export const App: React.FC = () => {
           </section>
         )}
 
-        {(status === 'INTERCEPTED' || status === 'ANALYZING') && <Loading snapshot={activeRequest} />}
+        {!showLog && (status === 'INTERCEPTED' || status === 'ANALYZING') && (
+          <Loading snapshot={activeRequest} />
+        )}
 
-        {status === 'ANALYSIS_READY' && activeRequest && (
+        {!showLog && status === 'ANALYSIS_READY' && activeRequest && (
           <RiskReport
             key={activeRequest.requestId}
             snapshot={activeRequest}
@@ -165,7 +183,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {status === 'ANALYSIS_UNAVAILABLE' && (
+        {!showLog && status === 'ANALYSIS_UNAVAILABLE' && (
           <AnalysisUnavailable
             snapshot={activeRequest}
             errorMessage={statusError}
@@ -174,15 +192,21 @@ export const App: React.FC = () => {
           />
         )}
 
-        {status === 'STALE' && (
+        {!showLog && status === 'STALE' && (
           <StaleReport snapshot={activeRequest} onReject={handleReject} onReset={handleReset} />
         )}
 
-        {status === 'REJECTED' && <Rejected snapshot={activeRequest} reason={statusError} onReset={handleReset} />}
+        {!showLog && status === 'REJECTED' && (
+          <Rejected snapshot={activeRequest} reason={statusError} onReset={handleReset} />
+        )}
 
-        {(status === 'FORWARDING' || status === 'COMPLETED') && <Forwarding snapshot={activeRequest} />}
+        {!showLog && (status === 'FORWARDING' || status === 'COMPLETED') && (
+          <Forwarding snapshot={activeRequest} />
+        )}
 
-        {status === 'FAILED' && <Failed snapshot={activeRequest} error={statusError} onReset={handleReset} />}
+        {!showLog && status === 'FAILED' && (
+          <Failed snapshot={activeRequest} error={statusError} onReset={handleReset} />
+        )}
       </main>
     </div>
   );

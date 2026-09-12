@@ -3,14 +3,14 @@ import { WalletSession } from './wallet.mjs';
 let CONFIG;
 let userAccount = null;
 let busy = false;
-const wallet = new WalletSession({ chainId: 31337, chainName: 'Anvil Local PS2', rpcUrl: 'http://127.0.0.1:8545', onChange: state => {
+const wallet = new WalletSession({ chainId: 31337, chainName: 'Aurum Local PS2', rpcUrl: 'http://127.0.0.1:8545', onChange: state => {
   userAccount = state.account;
   const addr = document.getElementById('wallet-address');
   if (addr) addr.textContent = state.account ?? 'Not connected';
   const button = document.getElementById('btn-connect');
   if (button) button.textContent = state.account ? `${state.account.slice(0, 6)}…${state.account.slice(-4)}` : 'Connect Wallet';
   const network = document.getElementById('network-id');
-  if (network) network.textContent = state.chain ? `${state.chain}${state.chain === 31337 ? ' (Anvil)' : ' — switch required'}` : 'Not connected';
+  if (network) network.textContent = state.chain ? `${state.chain}${state.chain === 31337 ? ' (Aurum Local)' : ' — switch required'}` : 'Not connected';
 }});
 function showError(error) {
   const message = error.code === 4001 ? 'Request rejected. Nothing was signed.' : error.code === -32002 ? 'A wallet request is already open. Check MetaMask.' : error.message || String(error);

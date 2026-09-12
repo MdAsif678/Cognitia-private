@@ -10,8 +10,10 @@ import {
   RequestStatus,
   AnalysisResult,
   InterceptedRequestMessage,
+  RequestLogPatch,
 } from '../shared/types';
 import { APPLICATION_NAMESPACE } from '../shared/constants';
+import { appendLog } from '../shared/logStore';
 
 /**
  * Extension Background Service Worker (MV3).
@@ -153,7 +155,7 @@ class BackgroundCoordinator {
       method: payload.method,
       rawParams: payload.params as unknown[],
       providerInfo: {
-        name: payload.providerId ?? 'Ethereum Provider',
+        name: payload.providerId ?? 'Wallet Provider',
       },
       status: 'INTERCEPTED',
       // Best-effort current chain/account context tracked by the page interceptor
@@ -161,6 +163,17 @@ class BackgroundCoordinator {
       account: payload.account,
       tabId: tab?.id,
     };
+
+    // Open the request's row in the persistent log (fire-and-forget; see recordLog).
+    this.recordLog({
+      id: payload.requestId,
+      timestamp: snapshot.timestamp,
+      origin: snapshot.origin,
+      method: snapshot.method,
+      chainId: snapshot.chainId,
+      account: snapshot.account,
+      status: 'INTERCEPTED',
+    });
 
     // 1. Ephemerally register the intercepted request in session storage
     if (!await this.pendingManager.registerRequest(snapshot)) {
@@ -183,6 +196,7 @@ class BackgroundCoordinator {
 
     // 3. Transition to ANALYZING and notify page & side panel
     await this.pendingManager.setAnalyzing(payload.requestId);
+    this.recordLog({ id: payload.requestId, status: 'ANALYZING' });
     this.broadcastStatus(payload.requestId, 'ANALYZING');
 
     await this.relayToContentTab(tab?.id ?? null, {
@@ -199,6 +213,13 @@ class BackgroundCoordinator {
       // Timeout, HTTP/network failure, malformed response, or a backend-reported
       // "failed" analysis: never interpreted as safe — surface the existing
       // non-bypassable "Analysis unavailable" flow.
+      this.recordLog({
+        id: payload.requestId,
+        status: 'ANALYSIS_UNAVAILABLE',
+        error: outcome.reason,
+        durationMs: Date.now() - snapshot.timestamp,
+      });
+
       const updated = await this.pendingManager.setAnalysisUnavailable(payload.requestId, outcome.reason);
       if (updated) {
         this.broadcastStatus(payload.requestId, 'ANALYSIS_UNAVAILABLE', undefined, outcome.reason);
@@ -216,6 +237,14 @@ class BackgroundCoordinator {
 
     // Contract-valid report: enter the existing ANALYSIS_READY lifecycle unchanged
     const analysisResult = outcome.analysis;
+
+    this.recordLog({
+      id: payload.requestId,
+      status: 'ANALYSIS_READY',
+      severity: analysisResult.severity,
+      summary: analysisResult.summary,
+      durationMs: Date.now() - snapshot.timestamp,
+    });
 
     const updated = await this.pendingManager.setAnalysisReady(payload.requestId, analysisResult);
     if (updated) {
@@ -248,6 +277,14 @@ class BackgroundCoordinator {
       // should the intercepted call be retried under the new account context.
       this.analyzer.invalidateAnalysis(active.requestId);
 
+      this.recordLog({
+        id: active.requestId,
+        status: 'STALE',
+        decision: 'stale',
+        error: 'Active request invalidated: account switched.',
+        durationMs: Date.now() - active.timestamp,
+      });
+
       this.broadcastStatus(active.requestId, 'STALE', undefined, 'Active request invalidated: account switched.');
 
       await this.relayToContentTab(active.tabId ?? null, {
@@ -273,6 +310,14 @@ class BackgroundCoordinator {
       // should the intercepted call be retried under the new chain context.
       this.analyzer.invalidateAnalysis(active.requestId);
 
+      this.recordLog({
+        id: active.requestId,
+        status: 'STALE',
+        decision: 'stale',
+        error: 'Active request invalidated: chain switched.',
+        durationMs: Date.now() - active.timestamp,
+      });
+
       this.broadcastStatus(active.requestId, 'STALE', undefined, 'Active request invalidated: chain switched.');
 
       await this.relayToContentTab(active.tabId ?? null, {
@@ -294,6 +339,12 @@ class BackgroundCoordinator {
     const snapshot = await this.pendingManager.beginForwarding(requestId);
     if (!snapshot) {
       console.warn('[ServiceWorker] Forwarding rejected: invalid state or duplicate action.');
+      this.recordLog({
+        id: requestId,
+        status: 'FAILED',
+        decision: 'failed',
+        error: 'Could not forward to the wallet: request is no longer active.',
+      });
       // Tell the side panel instead of leaving it on "Opening MetaMask..." forever.
       this.broadcastStatus(
         requestId,
@@ -316,6 +367,12 @@ class BackgroundCoordinator {
 
     // Mark completed once forwarded
     await this.pendingManager.complete(requestId);
+    this.recordLog({
+      id: requestId,
+      status: 'COMPLETED',
+      decision: 'forwarded',
+      durationMs: Date.now() - snapshot.timestamp,
+    });
     this.broadcastStatus(requestId, 'COMPLETED');
   }
 
@@ -330,6 +387,14 @@ class BackgroundCoordinator {
       return;
     }
 
+    this.recordLog({
+      id: requestId,
+      status: 'REJECTED',
+      decision: 'rejected',
+      error: reason,
+      durationMs: Date.now() - snapshot.timestamp,
+    });
+
     this.broadcastStatus(requestId, 'REJECTED', undefined, reason);
 
     // Send USER_REJECT to the tab that intercepted the request
@@ -340,6 +405,30 @@ class BackgroundCoordinator {
       requestId,
       reason,
     });
+  }
+
+  /**
+   * Writes one row of the persistent request log.
+   *
+   * Deliberately synchronous and fire-and-forget: it must never block, reorder or
+   * fail any part of the intercept/analyse/decide flow. appendLog already swallows
+   * its own errors; the extra guards here make that contract explicit.
+   */
+  private recordLog(patch: RequestLogPatch): void {
+    try {
+      void appendLog(patch)
+        .then(() => {
+          const message: BackgroundToSidepanelMessage = { type: 'LOG_UPDATED', entryId: patch.id };
+          chrome.runtime.sendMessage(message).catch(() => {
+            // Side panel may not be open; the row is already persisted.
+          });
+        })
+        .catch(() => {
+          // Logging is best-effort.
+        });
+    } catch {
+      // Logging is best-effort.
+    }
   }
 
   /**

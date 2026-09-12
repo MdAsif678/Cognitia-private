@@ -374,6 +374,11 @@ export class Simulator {
         "Only assets referenced by the calldata, logs or execution trace were compared; the wallet's other holdings were not enumerated.",
       ];
       if (tx.nonce !== undefined) assumptions.push(`The supplied nonce (${tx.nonce}) was not enforced; the account's next nonce on the fork was used.`);
+      if (exec.fundedShortfallWei !== undefined) {
+        assumptions.push(
+          `The sender holds ${exec.senderBalanceWei ?? 0n} wei but this request sends ${exec.spec.value} wei, so the fork balance was topped up by ${exec.fundedShortfallWei} wei to measure the effects. On the real chain the request would fail for insufficient funds.`,
+        );
+      }
 
       return {
         mode: "transaction",
@@ -571,6 +576,8 @@ function gasInfo(exec: StepExecution, tx: TxRequest, block: PinnedBlock, priorit
     effectiveGasPrice: price?.toString(),
     estimatedFeeWei: fee?.toString(),
     balanceCoversFee: fee !== undefined && senderAfter !== undefined ? senderAfter >= fee : undefined,
+    senderBalanceWei: exec.senderBalanceWei?.toString(),
+    fundedShortfallWei: exec.fundedShortfallWei?.toString(),
   };
 }
 

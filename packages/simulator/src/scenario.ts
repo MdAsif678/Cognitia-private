@@ -33,6 +33,10 @@ export type StepExecution = {
   logs: DecodedLog[];
   traceError?: string;
   createdAddress?: Address;
+  /** Sender's native balance on the fork before the step ran (read only when the step sends value). */
+  senderBalanceWei?: bigint;
+  /** Wei added to the sender on the fork so the step could execute, because the real balance was short. */
+  fundedShortfallWei?: bigint;
 };
 
 // Mining on a cold fork fetches every touched slot from the upstream RPC; slow public
@@ -98,6 +102,35 @@ export async function executeStep(rpc: ForkRpc, spec: StepSpec, gasCap: bigint, 
     traceError,
     createdAddress: receipt.contractAddress ? addr(receipt.contractAddress) : undefined,
   };
+}
+
+/**
+ * Ensures every sender can afford the value its step sends. Gas is priced at zero on the fork, so a
+ * shortfall can only come from `value`, and the node would otherwise refuse the transaction and
+ * dead-end the analysis at "not-executed" without telling the user what the request does.
+ *
+ * This must run BEFORE the diff baseline is captured: funding afterwards would make the sender's
+ * balance identical before and after, hiding the very outflow being measured.
+ *
+ * Returns the shortfall per step index; solvent senders are absent from the map.
+ */
+async function fundSenders(rpc: ForkRpc, steps: StepSpec[]): Promise<Map<number, { balanceWei: bigint; shortfallWei: bigint }>> {
+  const out = new Map<number, { balanceWei: bigint; shortfallWei: bigint }>();
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i]!;
+    if (step.value <= 0n) continue;
+    const balance = await rpc
+      .request<Hex>("eth_getBalance", [step.from, "latest"])
+      .then(hexToBigInt)
+      .catch(() => undefined);
+    if (balance === undefined || balance >= step.value) continue;
+    const funded = await rpc
+      .request("anvil_setBalance", [step.from, toHex(step.value)])
+      .then(() => true)
+      .catch(() => false);
+    if (funded) out.set(i, { balanceWei: balance, shortfallWei: step.value - balance });
+  }
+  return out;
 }
 
 export type ScenarioOptions = {
@@ -226,11 +259,20 @@ export async function runScenario(rpc: ForkRpc, opts: ScenarioOptions): Promise<
     if (opts.timings) opts.timings[`${opts.timingPrefix ?? "scenario"}.${stage}`] = now - mark;
     mark = now;
   };
-  const s0 = await rpc.snapshot();
+  // `pristine` is what the pooled fork is handed back as. Funding happens between it and `s0`, so
+  // the diff baseline (`s0` when baselineIndex is 0) already sees the topped-up balance and the
+  // sender's outflow is still measured, while the top-up itself never outlives this run.
+  const pristine = await rpc.snapshot();
   let restored = false;
   try {
+    const funding = await fundSenders(rpc, opts.steps);
+    const s0 = funding.size > 0 ? await rpc.snapshot() : pristine;
     const executions: StepExecution[] = [];
-    const run = (i: number) => executeStep(rpc, opts.steps[i]!, opts.gasCap, opts.blockTimestamp?.(i));
+    const run = async (i: number) => {
+      const exec = await executeStep(rpc, opts.steps[i]!, opts.gasCap, opts.blockTimestamp?.(i));
+      const funded = funding.get(i);
+      return funded ? { ...exec, senderBalanceWei: funded.balanceWei, fundedShortfallWei: funded.shortfallWei } : exec;
+    };
     for (let i = 0; i < opts.baselineIndex; i++) executions.push(await run(i));
     const baselineSnapshot = opts.baselineIndex > 0 ? await rpc.snapshot() : s0;
     for (let i = opts.baselineIndex; i < opts.steps.length; i++) executions.push(await run(i));
@@ -303,6 +345,7 @@ export async function runScenario(rpc: ForkRpc, opts: ScenarioOptions): Promise<
       readCodes(rpc, discovery.interestingAddresses, opts.readConcurrency, false),
     ]);
     if (baselineSnapshot !== s0) await rpc.revert(s0);
+    if (s0 !== pristine) await rpc.revert(pristine);
     restored = true;
     lap("readBefore");
 
@@ -335,6 +378,6 @@ export async function runScenario(rpc: ForkRpc, opts: ScenarioOptions): Promise<
       pullers,
     };
   } finally {
-    if (!restored) await rpc.revert(s0).catch(() => undefined);
+    if (!restored) await rpc.revert(pristine).catch(() => undefined);
   }
 }

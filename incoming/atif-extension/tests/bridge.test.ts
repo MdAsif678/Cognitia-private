@@ -179,7 +179,7 @@ export async function runBridgeTests(): Promise<TestResult[]> {
       method: 'eth_sendTransaction',
       params: rawParams,
       providerId: 'MetaMask',
-      origin: 'https://app.uniswap.org',
+      origin: 'https://app.lumaswap.io',
     });
 
     assert(res.success, 'Valid INTERCEPTED_REQUEST was rejected');
@@ -225,7 +225,7 @@ export async function runBridgeTests(): Promise<TestResult[]> {
       direction: 'PAGE_TO_EXTENSION',
       type: 'ACCOUNT_CHANGED',
       accounts: ['0x1111111111111111111111111111111111111111'],
-      origin: 'https://app.uniswap.org',
+      origin: 'https://app.lumaswap.io',
     });
 
     assert(res.success, 'Valid ACCOUNT_CHANGED was rejected');

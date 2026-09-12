@@ -123,7 +123,7 @@ export async function runRiskReportTests(): Promise<TestResult[]> {
     assert(mapSeverityLabel(benignTransferReport.severity).label === 'LOW RISK', 'Expected LOW RISK label');
     assert(benignTransferReport.immediateChanges.length === 1, 'Expected 1 immediateChange');
     assert(benignTransferReport.immediateChanges[0].type === 'native_transfer', 'Expected native_transfer type');
-    assert(benignTransferReport.immediateChanges[0].amount === '0.05 ETH', 'Expected 0.05 ETH amount');
+    assert(benignTransferReport.immediateChanges[0].amount === '0.05 AUR', 'Expected 0.05 AUR amount');
     assert(benignTransferReport.potentialExposure.length === 0, 'Benign transfer must have 0 potentialExposure');
     assert(benignTransferReport.simulation.mode === 'transaction', 'Expected transaction simulation mode');
     assert(benignTransferReport.simulation.outcome === 'success', 'Expected success outcome');
@@ -284,8 +284,8 @@ export async function runRiskReportTests(): Promise<TestResult[]> {
 
     assert(html.includes('LOW RISK'), 'Must render LOW RISK label');
     assert(html.includes('Immediate effect'), 'Must render "Immediate effect" badge');
-    assert(html.includes('Native ETH Transfer'), 'Must render Native ETH Transfer');
-    assert(html.includes('0.05 ETH'), 'Must render transfer amount 0.05 ETH');
+    assert(html.includes('Native AUR Transfer'), 'Must render Native AUR Transfer');
+    assert(html.includes('0.05 AUR'), 'Must render transfer amount 0.05 AUR');
     assert(html.includes('No potential exposure observed within'), 'Must qualify empty exposure results by analysis coverage');
     assert(html.includes('Fork Simulation Succeeded'), 'Must render fork simulation success');
     assert(html.includes('Reject'), 'Must render Reject button');

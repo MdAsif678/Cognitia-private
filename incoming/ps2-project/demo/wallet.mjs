@@ -69,7 +69,7 @@ export class WalletSession {
       } catch (error) {
         if (error.code !== 4902 && error.data?.originalError?.code !== 4902) throw error;
         if (this.provider !== provider) throw new Error('Wallet changed while switching networks.');
-        await provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId, chainName: this.chainName, rpcUrls: [this.rpcUrl], nativeCurrency: { name: 'Test ETH', symbol: 'ETH', decimals: 18 } }] });
+        await provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId, chainName: this.chainName, rpcUrls: [this.rpcUrl], nativeCurrency: { name: 'Test AUR', symbol: 'AUR', decimals: 18 } }] });
         if (this.provider !== provider) throw new Error('Wallet changed while switching networks.');
         await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
       }

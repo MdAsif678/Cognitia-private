@@ -59,7 +59,7 @@ async function analyzeButton(b: (typeof BUTTONS)[number]): Promise<State> {
   return { status: 'ready', report, snapshot, ms: Math.round(performance.now() - started) };
 }
 
-/** Replay a mined mainnet/Sepolia transaction as if it were still unsigned (POST /v1/replay). */
+/** Replay a mined Aurum Mainnet or Aurum Testnet transaction as if it were still unsigned (POST /v1/replay). */
 async function replayTx(chainId: number, txHash: string): Promise<State> {
   const started = performance.now();
   const res = await fetch(`${API}/v1/replay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chainId, txHash }) });
@@ -85,7 +85,7 @@ const App: React.FC = () => {
 
   const runReplay = () => {
     const hash = replayHash.trim();
-    if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return setDecision('Enter a 32-byte transaction hash (0x…) from Etherscan.');
+    if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return setDecision('Enter a 32-byte transaction hash (0x…) from AurumScan.');
     setSelected('replay');
     setStates((s) => ({ ...s, replay: { status: 'loading' } }));
     replayTx(replayChain, hash).then((st) => setStates((s) => ({ ...s, replay: st }))).catch((err) => setStates((s) => ({ ...s, replay: { status: 'error', message: String(err) } })));
@@ -124,10 +124,10 @@ const App: React.FC = () => {
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
         <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.14em', color: '#111111', fontWeight: 500 }}>OR REPLAY ANY REAL TRANSACTION:</span>
         <select value={replayChain} onChange={(e) => setReplayChain(Number(e.target.value))} style={{ background: '#ffffff', color: '#111111', border: '1px solid #c9c7c0', borderRadius: 8, padding: '6px 8px', fontSize: 12 }}>
-          <option value={1}>Ethereum mainnet</option>
-          <option value={11155111}>Sepolia</option>
+          <option value={1}>Aurum Mainnet</option>
+          <option value={11155111}>Aurum Testnet</option>
         </select>
-        <input id="replay-hash" value={replayHash} onChange={(e) => setReplayHash(e.target.value)} placeholder="0x… transaction hash from Etherscan" style={{ flex: 1, minWidth: 320, background: '#ffffff', color: '#111111', border: '1px solid #c9c7c0', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }} />
+        <input id="replay-hash" value={replayHash} onChange={(e) => setReplayHash(e.target.value)} placeholder="0x… transaction hash from AurumScan" style={{ flex: 1, minWidth: 320, background: '#ffffff', color: '#111111', border: '1px solid #c9c7c0', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }} />
         <button id="replay-run" onClick={runReplay} style={{ background: '#111111', color: '#ffffff', border: '1px solid #111111', borderRadius: 999, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Analyse as if unsigned</button>
       </div>
       <main style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>

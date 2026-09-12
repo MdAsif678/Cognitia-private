@@ -25,8 +25,8 @@ const TEST_ACCOUNT: HexAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 const TEST_SPENDER: HexAddress = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
 const DRAINER_OPERATOR: HexAddress = '0x1337BEEF00000000000000000000000000000001';
 const UNVERIFIED_CONTRACT: HexAddress = '0x5555555555555555555555555555555555555555';
-const USDC_CONTRACT: HexAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
-const BAYC_CONTRACT: HexAddress = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D';
+const NUSD_CONTRACT: HexAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+const VAPE_CONTRACT: HexAddress = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D';
 
 // =============================================================
 // 1. Benign Transfer
@@ -36,7 +36,7 @@ export const benignTransferReport: AnalysisReport = {
   requestHash: '0x1111111111111111111111111111111111111111111111111111111111111111',
   status: 'complete',
   severity: 'low',
-  summary: 'Safe direct transfer of 0.05 ETH to a verified recipient. No drainer or malicious pattern detected.',
+  summary: 'Safe direct transfer of 0.05 AUR to a verified recipient. No drainer or malicious pattern detected.',
   fork: {
     chainId: 1,
     blockNumber: '0x12d4a8f',
@@ -61,10 +61,10 @@ export const benignTransferReport: AnalysisReport = {
   immediateChanges: [
     {
       type: 'native_transfer',
-      asset: 'ETH',
+      asset: 'AUR',
       from: TEST_ACCOUNT,
       to: TEST_SPENDER,
-      amount: '0.05 ETH',
+      amount: '0.05 AUR',
     },
   ],
   potentialExposure: [],
@@ -82,20 +82,20 @@ export const benignTransferReport: AnalysisReport = {
     gasUsed: '21000',
     effectiveGasPrice: '15 Gwei',
     baseFee: '12 Gwei',
-    stateTrace: 'SSTORE 0x7099... balance +0.05 ETH',
+    stateTrace: 'SSTORE 0x7099... balance +0.05 AUR',
   },
 };
 
 export const benignTransferSnapshot: PendingRequestSnapshot = {
   requestId: 'req_fixture_benign_transfer',
   timestamp: 1726084800000,
-  origin: 'https://app.uniswap.org',
+  origin: 'https://app.lumaswap.io',
   method: 'eth_sendTransaction',
   rawParams: [
     {
       from: TEST_ACCOUNT,
       to: TEST_SPENDER,
-      value: '0xb1a2bc2ec50000', // 0.05 ETH
+      value: '0xb1a2bc2ec50000', // 0.05 AUR
     },
   ],
   chainId: '0x1',
@@ -129,16 +129,16 @@ export const nftApprovalReport: AnalysisReport = {
       id: 'drainer-operator',
       severity: 'critical',
       title: 'Drainer Operator Approval (setApprovalForAll)',
-      description: 'Grants operator full authority to transfer all tokens in the BoredApeYachtClub collection without further user confirmation.',
+      description: 'Grants operator full authority to transfer all tokens in the VaultApes collection without further user confirmation.',
       explanation: 'setApprovalForAll grants the operator address the authority to transfer all tokens owned by you in the contract. The operator address has been flagged in drainer intelligence databases.',
-      evidence: `Method: setApprovalForAll(operator=${DRAINER_OPERATOR}, approved=true) on BAYC (${BAYC_CONTRACT})`,
+      evidence: `Method: setApprovalForAll(operator=${DRAINER_OPERATOR}, approved=true) on VAPE (${VAPE_CONTRACT})`,
       confidence: 'Definitive (99%)',
     },
   ],
   immediateChanges: [
     {
       type: 'set_approval_for_all',
-      asset: 'BoredApeYachtClub (BAYC)',
+      asset: 'Vault Apes (VAPE)',
       from: TEST_ACCOUNT,
       spender: DRAINER_OPERATOR,
       amount: 'All NFTs in Collection',
@@ -147,7 +147,7 @@ export const nftApprovalReport: AnalysisReport = {
   potentialExposure: [
     {
       kind: 'operator_privilege',
-      asset: 'BoredApeYachtClub (BAYC)',
+      asset: 'Vault Apes (VAPE)',
       amount: 'All tokens owned by account',
       description: 'Operator can call transferFrom on any of your current or future NFTs in this contract at any time without further approval.',
     },
@@ -163,7 +163,7 @@ export const nftApprovalReport: AnalysisReport = {
     missing: [],
   },
   evidence: {
-    targetContract: BAYC_CONTRACT,
+    targetContract: VAPE_CONTRACT,
     calldataSelector: '0xa2205460 (setApprovalForAll)',
     operatorFlagged: 'Phishing Drainer Database: Blacklist ID #9821',
     simulatedEvent: 'ApprovalForAll(owner=0xf39F..., operator=0x1337..., approved=true)',
@@ -173,12 +173,12 @@ export const nftApprovalReport: AnalysisReport = {
 export const nftApprovalSnapshot: PendingRequestSnapshot = {
   requestId: 'req_fixture_nft_approval',
   timestamp: 1726084810000,
-  origin: 'https://mint-bayc-airdrop.xyz',
+  origin: 'https://mint-vaultapes-airdrop.xyz',
   method: 'eth_sendTransaction',
   rawParams: [
     {
       from: TEST_ACCOUNT,
-      to: BAYC_CONTRACT,
+      to: VAPE_CONTRACT,
       data: `0xa2205460000000000000000000000000${DRAINER_OPERATOR.slice(2)}0000000000000000000000000000000000000000000000000000000000000001`,
     },
   ],
@@ -197,7 +197,7 @@ export const unlimitedErc20ApprovalReport: AnalysisReport = {
   requestHash: '0x3333333333333333333333333333333333333333333333333333333333333333',
   status: 'complete',
   severity: 'high',
-  summary: 'High risk: Unlimited ERC20 allowance request. Grants spender permanent approval to drain up to 2^256 - 1 USDC.',
+  summary: 'High risk: Unlimited ERC20 allowance request. Grants spender permanent approval to drain up to 2^256 - 1 NUSD.',
   fork: {
     chainId: 1,
     blockNumber: '0x12d4a91',
@@ -222,7 +222,7 @@ export const unlimitedErc20ApprovalReport: AnalysisReport = {
   immediateChanges: [
     {
       type: 'erc20_approve',
-      asset: 'USD Coin (USDC)',
+      asset: 'Nova USD (NUSD)',
       from: TEST_ACCOUNT,
       spender: TEST_SPENDER,
       amount: 'Unlimited (MaxUint256)',
@@ -231,9 +231,9 @@ export const unlimitedErc20ApprovalReport: AnalysisReport = {
   potentialExposure: [
     {
       kind: 'token_allowance',
-      asset: 'USD Coin (USDC)',
+      asset: 'Nova USD (NUSD)',
       amount: 'Unlimited ($50,000.00 current balance + all future inflows)',
-      description: 'Spender address can transfer any amount of USDC from your account at any time via transferFrom.',
+      description: 'Spender address can transfer any amount of NUSD from your account at any time via transferFrom.',
     },
   ],
   coverage: {
@@ -246,7 +246,7 @@ export const unlimitedErc20ApprovalReport: AnalysisReport = {
     missing: [],
   },
   evidence: {
-    tokenAddress: USDC_CONTRACT,
+    tokenAddress: NUSD_CONTRACT,
     spenderAddress: TEST_SPENDER,
     rawAmountHex: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
     simulatedAllowanceSlot: 'keccak256(owner, spender) -> MaxUint256 written',
@@ -261,7 +261,7 @@ export const unlimitedErc20ApprovalSnapshot: PendingRequestSnapshot = {
   rawParams: [
     {
       from: TEST_ACCOUNT,
-      to: USDC_CONTRACT,
+      to: NUSD_CONTRACT,
       data: `0x095ea7b3000000000000000000000000${TEST_SPENDER.slice(2)}ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff`,
     },
   ],
@@ -319,12 +319,12 @@ export const revertedTransactionReport: AnalysisReport = {
 export const revertedTransactionSnapshot: PendingRequestSnapshot = {
   requestId: 'req_fixture_reverted_tx',
   timestamp: 1726084830000,
-  origin: 'https://app.uniswap.org',
+  origin: 'https://app.lumaswap.io',
   method: 'eth_sendTransaction',
   rawParams: [
     {
       from: TEST_ACCOUNT,
-      to: '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45', // Uniswap SwapRouter02
+      to: '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45', // LumaSwap SwapRouter02
       value: '0x0',
       data: '0x5ae401dc0000000000000000000000000000000000000000000000000000000067000000',
     },
@@ -355,7 +355,7 @@ export const conditionalPermitReport: AnalysisReport = {
     outcome: 'success',
     assumptions: [
       'Permit deadline timestamp (1893456000) has not expired when submitted',
-      'Owner wallet maintains sufficient USDC balance at execution time',
+      'Owner wallet maintains sufficient NUSD balance at execution time',
       'Contract nonces match the signature parameters on-chain',
       'Spender address broadcasts permit transaction prior to revocation',
     ],
@@ -365,9 +365,9 @@ export const conditionalPermitReport: AnalysisReport = {
       id: 'gasless-permit-risk',
       severity: 'high',
       title: 'Off-Chain Gasless Permit Authorization',
-      description: 'EIP-712 Permit signature detected. Permits spender to withdraw 1,000 USDC without direct on-chain signing.',
+      description: 'EIP-712 Permit signature detected. Permits spender to withdraw 1,000 NUSD without direct on-chain signing.',
       explanation: 'Signing this typed data allows a designated spender to submit the permit on-chain and execute token transfers without paying gas yourself.',
-      evidence: `Permit domain: USD Coin (${USDC_CONTRACT}), Spender: ${TEST_SPENDER}, Value: 1,000,000,000 (1,000 USDC)`,
+      evidence: `Permit domain: Nova USD (${NUSD_CONTRACT}), Spender: ${TEST_SPENDER}, Value: 1,000,000,000 (1,000 NUSD)`,
       confidence: 'High (90%)',
     },
   ],
@@ -375,9 +375,9 @@ export const conditionalPermitReport: AnalysisReport = {
   potentialExposure: [
     {
       kind: 'token_allowance',
-      asset: 'USD Coin (USDC)',
-      amount: '1,000 USDC ($1,000.00)',
-      description: 'A third party possessing this signed message can execute the permit and pull up to 1,000 USDC from your wallet.',
+      asset: 'Nova USD (NUSD)',
+      amount: '1,000 NUSD ($1,000.00)',
+      description: 'A third party possessing this signed message can execute the permit and pull up to 1,000 NUSD from your wallet.',
     },
   ],
   coverage: {
@@ -391,8 +391,8 @@ export const conditionalPermitReport: AnalysisReport = {
   },
   evidence: {
     primaryType: 'Permit',
-    domainName: 'USD Coin',
-    verifyingContract: USDC_CONTRACT,
+    domainName: 'Nova USD',
+    verifyingContract: NUSD_CONTRACT,
     spender: TEST_SPENDER,
     deadline: '1893456000 (Wed Dec 31 2029)',
     nonce: '0',
@@ -402,7 +402,7 @@ export const conditionalPermitReport: AnalysisReport = {
 export const conditionalPermitSnapshot: PendingRequestSnapshot = {
   requestId: 'req_fixture_conditional_permit',
   timestamp: 1726084840000,
-  origin: 'https://curve.fi',
+  origin: 'https://helixfi.io',
   method: 'eth_signTypedData_v4',
   rawParams: [
     TEST_ACCOUNT,
@@ -424,10 +424,10 @@ export const conditionalPermitSnapshot: PendingRequestSnapshot = {
       },
       primaryType: 'Permit',
       domain: {
-        name: 'USD Coin',
+        name: 'Nova USD',
         version: '2',
         chainId: 1,
-        verifyingContract: USDC_CONTRACT,
+        verifyingContract: NUSD_CONTRACT,
       },
       message: {
         owner: TEST_ACCOUNT,
@@ -470,7 +470,7 @@ export const failedAnalysisReport: AnalysisReport = {
       severity: 'unknown',
       title: 'Unverified Contract Source Code',
       description: 'Destination contract source is not verified on block explorer.',
-      explanation: 'The contract source code is not published or verified on Etherscan. Note: unverified status alone does not imply malicious behavior, but bytecode inspection and simulation depth are limited.',
+      explanation: 'The contract source code is not published or verified on AurumScan. Note: unverified status alone does not imply malicious behavior, but bytecode inspection and simulation depth are limited.',
       evidence: `Target: ${UNVERIFIED_CONTRACT} (No verified ABI found)`,
       confidence: 'Medium (65%)',
     },
@@ -516,21 +516,21 @@ export const failedAnalysisSnapshot: PendingRequestSnapshot = {
 export const ALL_FIXTURES: Record<string, FixtureScenario> = {
   benign: {
     id: 'benign',
-    name: 'Benign Transfer (ETH)',
+    name: 'Benign Transfer (AUR)',
     snapshot: benignTransferSnapshot,
     report: benignTransferReport,
     analysis: benignTransferSnapshot.analysis!,
   },
   nftApproval: {
     id: 'nftApproval',
-    name: 'NFT setApprovalForAll (BAYC)',
+    name: 'NFT setApprovalForAll (VAPE)',
     snapshot: nftApprovalSnapshot,
     report: nftApprovalReport,
     analysis: nftApprovalSnapshot.analysis!,
   },
   unlimitedErc20: {
     id: 'unlimitedErc20',
-    name: 'Unlimited ERC20 Approval (USDC)',
+    name: 'Unlimited ERC20 Approval (NUSD)',
     snapshot: unlimitedErc20ApprovalSnapshot,
     report: unlimitedErc20ApprovalReport,
     analysis: unlimitedErc20ApprovalSnapshot.analysis!,

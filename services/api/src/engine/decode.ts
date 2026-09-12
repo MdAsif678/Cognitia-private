@@ -195,6 +195,174 @@ function decodeMessage(hex: Hex): string {
   }
 }
 
+/**
+ * A Sign-In with Ethereum request (EIP-4361). The format is a fixed preamble, the account on its
+ * own line, an optional statement, then `Key: value` lines.
+ */
+type SiweMessage = {
+  domain: string;
+  address?: string;
+  statement?: string;
+  uri?: string;
+  chainId?: number;
+  nonce?: string;
+  expirationTime?: string;
+};
+
+const SIWE_PREAMBLE = /^(?<domain>[^\s]+?)(?: wants you to sign in with your (?:\w+ )?account:)\s*\n(?<address>0x[0-9a-fA-F]{40})?/;
+
+function parseSiwe(text: string): SiweMessage | undefined {
+  const head = SIWE_PREAMBLE.exec(text);
+  if (!head?.groups?.domain) return undefined;
+  const field = (name: string) => new RegExp(`^${name}: *(.+)$`, "m").exec(text)?.[1]?.trim();
+  const chainId = field("Chain ID");
+  const lines = text.split("\n");
+  // The statement, when present, is the block between the address line and the first `Key: value`.
+  const statement = lines
+    .slice(2)
+    .join("\n")
+    .split(/\n(?=[A-Z][\w ]*: )/)[0]
+    ?.trim();
+  return {
+    domain: head.groups.domain,
+    address: head.groups.address,
+    statement: statement || undefined,
+    uri: field("URI"),
+    chainId: chainId && /^\d+$/.test(chainId) ? Number(chainId) : undefined,
+    nonce: field("Nonce"),
+    expirationTime: field("Expiration Time"),
+  };
+}
+
+/** Host of a URL-ish string, without the port, for comparing a site against what it claims to be. */
+function hostOf(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const raw = value.trim();
+  try {
+    return new URL(/^[a-zA-Z][\w+.-]*:\/\//.test(raw) ? raw : `https://${raw}`).hostname.toLowerCase();
+  } catch {
+    return raw.split("/")[0]?.split(":")[0]?.toLowerCase() || undefined;
+  }
+}
+
+function decodePersonalSign(req: AnalyzeRequest, n: Extract<NormalizedRequest, { kind: "personal-sign" }>): DecodeResult {
+  const text = decodeMessage(n.message);
+  const findings: Finding[] = [];
+  const push = (f: Omit<Finding, "id">) => findings.push({ id: `${f.ruleId}#${findings.length}`, ...f });
+
+  // personal_sign is meant for human-readable text. A bare 32-byte hash is eth_sign in disguise:
+  // nothing about what it authorises can be read or simulated.
+  if (/^0x[0-9a-fA-F]{64}$/.test(text.trim())) {
+    push({
+      ruleId: "signature.opaque-hash",
+      severity: "high",
+      title: "Blind signature of a raw hash",
+      explanation:
+        "The message is a bare 32-byte hash rather than readable text, so what it authorises cannot be decoded or simulated. It can be the hash of a transaction or permit that moves your assets. Legitimate sign-in prompts are readable.",
+      confidence: "high",
+      evidenceType: "signature",
+      evidence: [{ kind: "signature", summary: `personal_sign(${text.trim()})` }],
+    });
+  }
+
+  const siwe = parseSiwe(text);
+  if (!siwe) {
+    return {
+      intent: { kind: "personal-sign", known: text !== n.message, summary: `Sign a message: "${text.slice(0, 140)}${text.length > 140 ? "…" : ""}"`, source: "none" },
+      hints: {},
+      findings,
+    };
+  }
+
+  const claimed = hostOf(siwe.domain);
+  const actual = hostOf(req.origin);
+  // The whole point of the EIP-4361 domain field: the site you are on must be the site you sign
+  // in to. A mismatch is how a phishing page harvests a session for somewhere else.
+  if (claimed && actual && claimed !== actual) {
+    push({
+      ruleId: "signature.siwe-domain-mismatch",
+      severity: "high",
+      title: `Sign-in is for ${claimed}, but the site is ${actual}`,
+      explanation: `This sign-in message says it is for ${claimed}, while the page asking for it is ${actual}. A genuine sign-in names the site you are on. Signing here can hand ${actual} a session for ${claimed}.`,
+      confidence: "high",
+      evidenceType: "signature",
+      evidence: [{ kind: "signature", summary: `domain "${siwe.domain}" vs origin "${req.origin}"`, data: { domain: siwe.domain, origin: req.origin } }],
+    });
+  }
+
+  const uriHost = hostOf(siwe.uri);
+  if (claimed && uriHost && uriHost !== claimed) {
+    push({
+      ruleId: "signature.siwe-uri-mismatch",
+      severity: "medium",
+      title: `Sign-in URI points at ${uriHost}`,
+      explanation: `The message names ${claimed} as the domain but its URI points at ${uriHost}. The two should agree.`,
+      confidence: "high",
+      evidenceType: "signature",
+      evidence: [{ kind: "signature", summary: `URI ${siwe.uri}` }],
+    });
+  }
+
+  if (siwe.address && siwe.address.toLowerCase() !== n.signer.toLowerCase()) {
+    push({
+      ruleId: "signature.siwe-address-mismatch",
+      severity: "medium",
+      title: "Sign-in names a different account",
+      explanation: `The message signs in as ${siwe.address}, but ${n.signer} is being asked to sign. A genuine sign-in names the account holding the wallet.`,
+      confidence: "high",
+      evidenceType: "signature",
+      evidence: [{ kind: "signature", summary: `message address ${siwe.address} vs signer ${n.signer}` }],
+    });
+  }
+
+  if (siwe.chainId !== undefined && siwe.chainId !== req.chainId) {
+    push({
+      ruleId: "signature.siwe-chain-mismatch",
+      severity: "low",
+      title: `Sign-in is for chain ${siwe.chainId}`,
+      explanation: `The message is scoped to chain ${siwe.chainId} while the wallet is on chain ${req.chainId}.`,
+      confidence: "high",
+      evidenceType: "signature",
+      evidence: [{ kind: "signature", summary: `Chain ID ${siwe.chainId} vs ${req.chainId}` }],
+    });
+  }
+
+  if (siwe.expirationTime) {
+    const expiry = Date.parse(siwe.expirationTime);
+    if (!Number.isNaN(expiry) && expiry < Date.now()) {
+      push({
+        ruleId: "signature.siwe-expired",
+        severity: "low",
+        title: "Sign-in message has already expired",
+        explanation: `It expired at ${siwe.expirationTime}. A server following the standard will reject it, so signing achieves nothing.`,
+        confidence: "high",
+        evidenceType: "signature",
+        evidence: [{ kind: "signature", summary: `Expiration Time ${siwe.expirationTime}` }],
+      });
+    }
+  }
+
+  return {
+    intent: {
+      kind: "personal-sign",
+      known: true,
+      summary: `Sign in to ${siwe.domain}${siwe.address ? ` as ${short(siwe.address)}` : ""}`,
+      source: "none",
+      args: {
+        domain: siwe.domain,
+        ...(siwe.address ? { address: siwe.address } : {}),
+        ...(siwe.uri ? { uri: siwe.uri } : {}),
+        ...(siwe.nonce ? { nonce: siwe.nonce } : {}),
+        ...(siwe.chainId !== undefined ? { chainId: String(siwe.chainId) } : {}),
+        ...(siwe.expirationTime ? { expirationTime: siwe.expirationTime } : {}),
+        ...(siwe.statement ? { statement: siwe.statement } : {}),
+      },
+    },
+    hints: {},
+    findings,
+  };
+}
+
 /** Stage 2 (baseline): decoded intent, simulation hints and pre-simulation findings. */
 export function baselineDecode(req: AnalyzeRequest, n: NormalizedRequest): DecodeResult {
   switch (n.kind) {
@@ -202,14 +370,8 @@ export function baselineDecode(req: AnalyzeRequest, n: NormalizedRequest): Decod
       return decodeTransaction(n);
     case "typed-data":
       return decodeTypedData(req, n);
-    case "personal-sign": {
-      const text = decodeMessage(n.message);
-      return {
-        intent: { kind: "personal-sign", known: text !== n.message, summary: `Sign a message: "${text.slice(0, 140)}${text.length > 140 ? "…" : ""}"`, source: "none" },
-        hints: {},
-        findings: [],
-      };
-    }
+    case "personal-sign":
+      return decodePersonalSign(req, n);
     case "eth-sign":
       return {
         intent: { kind: "eth-sign", known: false, summary: `Blind-sign a raw 32-byte hash ${short(n.hash)}`, source: "none" },

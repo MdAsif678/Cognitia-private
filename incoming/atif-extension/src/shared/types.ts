@@ -151,6 +151,45 @@ export interface AnalysisResult {
 
 
 // ==========================================
+// 5B. Persistent Request Log
+// ==========================================
+
+/**
+ * What ultimately happened to an intercepted request from the user's point of view.
+ * Absent while the request is still being analysed or awaiting a decision.
+ */
+export type RequestLogDecision = 'forwarded' | 'rejected' | 'failed' | 'stale';
+
+/**
+ * One row of the persistent, user-viewable request log.
+ * Deliberately small and JSON-serialisable: it is written to chrome.storage.local
+ * on every lifecycle transition and exported verbatim as plain text.
+ */
+export interface RequestLogEntry {
+  /** The intercepted request's requestId, so lifecycle updates rewrite one row. */
+  id: string;
+  /** Epoch milliseconds at interception. */
+  timestamp: number;
+  origin: string;
+  method: string;
+  chainId?: string;
+  account?: string;
+  status: RequestStatus;
+  severity?: RiskSeverity;
+  summary?: string;
+  decision?: RequestLogDecision;
+  /** Milliseconds from interception to the update that set this field. */
+  durationMs?: number;
+  error?: string;
+}
+
+/**
+ * A partial update applied to the log row identified by `id`
+ * (creating it with defaults if this is the first write for that request).
+ */
+export type RequestLogPatch = Partial<RequestLogEntry> & { id: string };
+
+// ==========================================
 // 6. Cross-Boundary Communication Protocol
 // ==========================================
 
@@ -319,5 +358,10 @@ export type BackgroundToSidepanelMessage =
       readonly status: RequestStatus;
       readonly analysis?: AnalysisResult;
       readonly error?: string;
+    }
+  | {
+      /** A row was written to the persistent request log; open panels may refresh. */
+      readonly type: 'LOG_UPDATED';
+      readonly entryId: string;
     };
 

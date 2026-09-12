@@ -60,7 +60,7 @@ function buildReport(payload) {
   if (method === 'eth_sendTransaction' && tx.value) {
     immediateChanges.push({
       type: 'native_transfer',
-      asset: 'ETH',
+      asset: 'AUR',
       from: typeof tx.from === 'string' ? tx.from : undefined,
       to: typeof tx.to === 'string' ? tx.to : undefined,
       amount: tx.value,
@@ -80,7 +80,7 @@ function buildReport(payload) {
     ];
     potentialExposure.push({
       kind: 'token_allowance',
-      asset: 'Permit2 allowance',
+      asset: 'Permit allowance',
       description: 'Signed permit may be redeemable by any spender referenced in the typed data.',
     });
   }

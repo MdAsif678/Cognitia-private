@@ -63,15 +63,31 @@ export function baselineAssess(input: AssessInput): Assessment {
         evidence: [{ kind: "simulation", summary: input.simulationError ?? "simulation not run" }],
       });
     } else if (normalized.kind === "personal-sign") {
-      add({
-        ruleId: "signature.message",
-        severity: "unknown",
-        title: "Off-chain message signature",
-        explanation: "Signing a plain message moves no assets by itself, but some apps use signed messages as logins or off-chain orders. Only sign messages you understand from sites you trust.",
-        confidence: "medium",
-        evidenceType: "signature",
-        evidence: [{ kind: "signature", summary: decoded.intent.summary }],
-      });
+      // A decoded sign-in (EIP-4361) is readable, so say what it does rather than falling back to
+      // "unknown": the decoder has already raised findings for anything that does not line up.
+      const siweDomain = decoded.intent.known ? decoded.intent.args?.domain : undefined;
+      if (siweDomain) {
+        add({
+          ruleId: "signature.siwe",
+          severity: "low",
+          title: `Signs you in to ${siweDomain}`,
+          explanation:
+            "This is a sign-in message. It moves no assets and grants no spending permission by itself; it proves to the site that you control this account. Nothing else can be done with the signature.",
+          confidence: "high",
+          evidenceType: "signature",
+          evidence: [{ kind: "signature", summary: decoded.intent.summary, data: decoded.intent.args }],
+        });
+      } else {
+        add({
+          ruleId: "signature.message",
+          severity: "unknown",
+          title: "Off-chain message signature",
+          explanation: "Signing a plain message moves no assets by itself, but some apps use signed messages as logins or off-chain orders. Only sign messages you understand from sites you trust.",
+          confidence: "medium",
+          evidenceType: "signature",
+          evidence: [{ kind: "signature", summary: decoded.intent.summary }],
+        });
+      }
     } else if (normalized.kind === "typed-data" && findings.length === 0) {
       add({
         ruleId: "signature.unknown-typed-data",
@@ -190,7 +206,7 @@ export function baselineAssess(input: AssessInput): Assessment {
         ruleId: unlimited ? "approval.erc20-unlimited" : "approval.erc20",
         severity: unlimited ? "high" : "medium",
         title: `${unlimited ? "Re-confirms unlimited" : "Re-confirms"} ${label} spending for ${short(args.spender)}`.replace(/\s+/g, " "),
-        explanation: `${short(args.spender)} (${accountKind(sim.accounts, args.spender)}) can already spend ${unlimited ? "any amount of" : "this much of"} your ${label}; this request asks you to authorise it again. Sites that keep asking for the same approval are a drainer pattern — revoke the allowance instead of confirming.`,
+        explanation: `${short(args.spender)} (${accountKind(sim.accounts, args.spender)}) can already spend ${unlimited ? "any amount of" : "this much of"} your ${label}; this request asks you to authorise it again. Sites that keep asking for the same approval are a drainer pattern ï¿½ revoke the allowance instead of confirming.`,
         confidence: "high",
         evidenceType: "decoded-calldata",
         evidence: [
@@ -339,6 +355,19 @@ export function baselineAssess(input: AssessInput): Assessment {
       confidence: "high",
       evidenceType: "signature",
       evidence: [{ kind: "signature", summary: check.detail }],
+    });
+  }
+
+  // The fork was funded so the request could run; on the real chain it never gets that far.
+  if (sim.gas?.fundedShortfallWei !== undefined) {
+    add({
+      ruleId: "funds.insufficient",
+      severity: "medium",
+      title: "Your balance does not cover this transaction",
+      explanation: `This sends ${eth(normalized.kind === "transaction" ? (normalized.tx.value ?? "0") : "0")} but the account holds ${eth(sim.gas.senderBalanceWei ?? "0")}, ${eth(sim.gas.fundedShortfallWei)} short. On the real chain it would be rejected for insufficient funds. The effects above were measured by topping the balance up on the private fork, so they show what would happen if it were funded.`,
+      confidence: "high",
+      evidenceType: "simulated-state",
+      evidence: [{ kind: "simulation", summary: `short by ${sim.gas.fundedShortfallWei} wei` }],
     });
   }
 

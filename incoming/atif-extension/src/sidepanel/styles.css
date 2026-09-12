@@ -378,6 +378,63 @@ details.block-disclosure > summary:focus-visible { outline-offset: -2px; border-
   box-shadow: var(--shadow-card); overflow: hidden;
 }
 
+/* ---------------------------------------------------------------- request log */
+/* Same grammar as the report: hairlines between rows, mono uppercase captions,
+   the severity token on the severity word only, pills for the three actions. */
+.topbar-end { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.log-toggle {
+  flex: none; display: inline-flex; align-items: center; gap: 6px;
+  font: 500 10px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+  background: transparent; border: 1px solid var(--line-2); border-radius: var(--r-pill);
+  padding: 7px 11px; min-height: 30px; cursor: pointer;
+  transition: color 0.25s var(--ease), border-color 0.25s var(--ease), background-color 0.25s var(--ease);
+}
+.log-toggle svg { flex: none; }
+.log-toggle:hover { color: var(--ink); border-color: var(--ink); }
+.log-toggle:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.log-toggle[aria-pressed='true'] { color: var(--surface); background: var(--ink); border-color: var(--ink); }
+
+.log { display: flex; flex-direction: column; min-height: 100%; background: var(--surface); }
+.log-head { padding: 22px 20px 18px; border-bottom: 1px solid var(--line); }
+.log-title { font: 800 28px/1 var(--display); letter-spacing: -0.03em; color: var(--ink); text-wrap: balance; }
+.log-title::after { content: ''; display: inline-block; width: 0.26em; height: 0.26em; margin-left: 0.1em; background: var(--ink); }
+.log-sub { margin-top: 8px; font-size: 13px; line-height: 1.55; color: var(--text); max-width: 44ch; }
+.log-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.log-actions .btn { flex: 1 1 90px; min-height: 44px; height: auto; padding: 0 12px; font-size: 13px; }
+.log-notice { margin-top: 8px; min-height: 16px; font: 400 11.5px/1.4 var(--sans); color: var(--muted); }
+
+.log-cols {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 12px 20px 8px;
+  font: 500 10px/1.4 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.log-list { display: flex; flex-direction: column; margin: 0; padding: 0 20px 20px; }
+.log-row { display: flex; flex-direction: column; gap: 5px; padding: 12px 0; border-top: 1px solid var(--line); }
+.log-row:first-child { border-top: 0; padding-top: 2px; }
+.log-row-head, .log-row-foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; }
+.log-time { flex: none; font: 400 11.5px/1.4 var(--mono); color: var(--muted); }
+.log-decision {
+  flex: 0 1 auto; margin-left: auto; text-align: right;
+  font: 500 10px/1.4 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.log-decision[data-decision='forwarded'] { color: var(--green); }
+.log-decision[data-decision='rejected'] { color: var(--red); }
+.log-decision[data-decision='failed'] { color: var(--red); }
+.log-decision[data-decision='stale'] { color: var(--amber); }
+.log-origin { font: 600 14px/1.35 var(--sans); color: var(--ink); overflow-wrap: anywhere; word-break: break-word; }
+.log-method { flex: 1 1 auto; min-width: 0; font: 400 11px/1.45 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.log-sev {
+  flex: none; margin-left: auto;
+  font: 500 10px/1.4 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sev);
+}
+.log-empty {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 22px 20px; font-size: 13px; line-height: 1.55; color: var(--text);
+}
+.log-empty > svg { flex: none; margin-top: 2px; color: var(--muted); }
+.log-empty strong { display: block; margin-bottom: 3px; font: 600 14px/1.3 var(--sans); color: var(--ink); }
+.log-empty p { max-width: 44ch; }
+
 /* ---------------------------------------------------------------- narrow panels */
 @media (max-width: 340px) {
   .topbar, .devbar { padding-left: 16px; padding-right: 16px; }
@@ -385,4 +442,8 @@ details.block-disclosure > summary:focus-visible { outline-offset: -2px; border-
   details.block-disclosure > summary { padding-left: 16px; padding-right: 16px; }
   .disclosure-body { padding-left: 16px; padding-right: 16px; }
   .kv { grid-template-columns: 84px minmax(0, 1fr); }
+  .log-head, .log-cols, .log-empty { padding-left: 16px; padding-right: 16px; }
+  .log-list { padding-left: 16px; padding-right: 16px; }
+  .topbar-end { gap: 8px; }
+  .log-toggle { padding: 7px 9px; }
 }

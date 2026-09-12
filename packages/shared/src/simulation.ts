@@ -109,6 +109,14 @@ export const GasInfoSchema = z.object({
   effectiveGasPrice: UintStringSchema.optional(),
   /** Sender's native balance after the request still covers the estimated fee. */
   balanceCoversFee: z.boolean().optional(),
+  /** Sender's real native balance on the upstream chain, before the request ran. */
+  senderBalanceWei: UintStringSchema.optional(),
+  /**
+   * Set only when the sender's real balance could not cover the value this request sends, so the
+   * fork balance was topped up by this many wei to let the request execute and be measured. On the
+   * real chain the request would fail for insufficient funds; the effects shown assume it were funded.
+   */
+  fundedShortfallWei: UintStringSchema.optional(),
 });
 export type GasInfo = z.infer<typeof GasInfoSchema>;
 
