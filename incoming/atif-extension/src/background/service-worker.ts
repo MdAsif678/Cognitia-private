@@ -171,19 +171,14 @@ class BackgroundCoordinator {
       return;
     }
 
-    // 2. Open extension-owned review. Chrome may reject sidePanel.open after the
-    // asynchronous wallet context lookup consumes the original user gesture.
-    let panelOpened = false;
+    // Keep review docked in the browser. If the user gesture has expired,
+    // the toolbar badge directs the user to open the existing side panel.
     if (tab?.id && chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
       try {
         await chrome.sidePanel.open({ tabId: tab.id });
-        panelOpened = true;
       } catch {
-        // Use a dedicated extension window below, never a dapp-owned dialog.
+        // Clicking the extension toolbar icon opens the panel with a fresh gesture.
       }
-    }
-    if (!panelOpened) {
-      await chrome.windows.create({ url: chrome.runtime.getURL('sidepanel/index.html'), type: 'popup', width: 440, height: 760 }).catch(() => {});
     }
 
     // 3. Transition to ANALYZING and notify page & side panel
@@ -373,6 +368,10 @@ class BackgroundCoordinator {
     analysis?: AnalysisResult,
     error?: string
   ): void {
+    const waiting = ['INTERCEPTED', 'ANALYZING', 'ANALYSIS_READY', 'ANALYSIS_UNAVAILABLE', 'STALE'].includes(status);
+    chrome.action.setBadgeText({ text: waiting ? '!' : '' }).catch(() => {});
+    chrome.action.setBadgeBackgroundColor({ color: '#a84a0c' }).catch(() => {});
+    chrome.action.setTitle({ title: waiting ? 'Cognitia: request held. Click to review in the side panel.' : 'Open Cognitia side panel' }).catch(() => {});
     const message: BackgroundToSidepanelMessage = {
       type: 'REQUEST_STATUS_UPDATED',
       requestId,

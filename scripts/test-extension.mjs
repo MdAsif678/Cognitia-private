@@ -68,6 +68,7 @@ try {
     await site.locator(button).click();
     const report = panel.locator('#risk-report-container');
     await expect(report).toHaveAttribute('data-severity', severity, { timeout: 60000 });
+    assert.equal(await worker.evaluate(async () => (await chrome.windows.getAll()).filter(w => w.type === 'popup').length), 0, 'Review must not create a separate window');
     assert.equal(await site.evaluate(() => window.__walletCalls.length), 0, `${name}: request reached wallet before approval`);
     await expect(panel.locator('#section-summary')).toBeVisible();
     if (name === 'hidden-drain') {
