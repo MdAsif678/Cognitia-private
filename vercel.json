@@ -1,4 +1,15 @@
 {
   "version": 2,
-  "outputDirectory": "incoming/ps2-project/demo"
+  "builds": [
+    {
+      "src": "incoming/ps2-project/demo/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "incoming/ps2-project/demo/$1"
+    }
+  ]
 }
