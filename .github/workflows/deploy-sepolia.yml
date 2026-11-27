@@ -48,7 +48,13 @@ jobs:
           [ -n "$ATTACKER_ADDRESS" ] || unset ATTACKER_ADDRESS
           VERIFY=()
           [ -n "$ETHERSCAN_API_KEY" ] && VERIFY=(--verify --etherscan-api-key "$ETHERSCAN_API_KEY")
-          forge script script/DeployAll.s.sol:DeployAll --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --broadcast "${VERIFY[@]}"
+          # Sepolia runs Glamsterdam (EIP-8037): new contract code and storage cost several times more
+          # gas than Forge's local simulation charges, so simulated gas limits run out of gas on-chain.
+          # --skip-simulation --slow makes Forge ask Sepolia (eth_estimateGas) for each transaction,
+          # right before sending it. The 115% margin keeps the largest deploy (TestERC1155, ~13M gas)
+          # under the 16,777,216 per-transaction gas cap (EIP-7825).
+          forge script script/DeployAll.s.sol:DeployAll --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --broadcast \
+            --skip-simulation --slow --gas-estimate-multiplier 115 "${VERIFY[@]}"
       - name: Record addresses for the site
         env:
           ATTACKER_ADDRESS: ${{ vars.SEPOLIA_ATTACKER_ADDRESS }}
