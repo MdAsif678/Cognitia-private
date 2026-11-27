@@ -23,7 +23,9 @@
     "build:demo-extension": "node scripts/build-demo-extension.mjs",
     "test:extension": "npm run build:demo-extension && node scripts/test-extension.mjs",
     "fund:local": "tsx scripts/fund-local.ts",
-    "demo:public": "node scripts/public-demo.mjs"
+    "demo:public": "node scripts/public-demo.mjs",
+    "dev:site": "npm run dev -w @cognitia/site",
+    "build:site": "node scripts/build-site.mjs"
   },
   "engines": {
     "node": ">=22"

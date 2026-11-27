@@ -1,5 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "echo ready",
-  "outputDirectory": "incoming/ps2-project/demo"
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build:site",
+  "outputDirectory": "apps/site/dist"
 }

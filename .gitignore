@@ -24,3 +24,6 @@ incoming/ps2-project/lib/
 # Generated local deployment and verification reports
 incoming/ps2-project/demo/deployment.json
 artifacts/
+
+# Site build output and the packaged extension it serves
+apps/site/public/downloads/

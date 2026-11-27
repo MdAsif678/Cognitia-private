@@ -1,0 +1,62 @@
+name: Publish site
+# Builds the extension against the public analysis API, packages it as a ZIP inside the site, and
+# publishes the landing page, install page, playground and live demo to GitHub Pages.
+#
+# One-time setup: Settings -> Pages -> Source: "GitHub Actions".
+# Repository variables (Settings -> Secrets and variables -> Actions -> Variables), all optional:
+#   ANALYSIS_API_URL   public HTTPS URL of the analysis API, e.g. https://api.example.com
+#   SITE_REPO_URL      link shown in the footer
+#   CHROME_STORE_URL   Chrome Web Store listing, once published
+#   DEMO_VIDEO_URL     demo video link
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/site/**
+      - incoming/atif-extension/**
+      - incoming/ps2-project/demo/theme.css
+      - incoming/ps2-project/deployments/**
+      - scripts/build-site.mjs
+      - .github/workflows/site.yml
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build extension ZIP and site
+        env:
+          SITE_API_BASE_URL: ${{ vars.ANALYSIS_API_URL }}
+          SITE_REPO_URL: ${{ vars.SITE_REPO_URL }}
+          SITE_CHROME_STORE_URL: ${{ vars.CHROME_STORE_URL }}
+          SITE_DEMO_VIDEO_URL: ${{ vars.DEMO_VIDEO_URL }}
+        run: npm run build:site
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cognitia-extension
+          path: apps/site/dist/downloads/cognitia-extension.zip
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/site/dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - id: pages
+        uses: actions/deploy-pages@v4

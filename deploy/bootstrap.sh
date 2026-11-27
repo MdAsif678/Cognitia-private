@@ -33,6 +33,17 @@ if ! id -nG "$USER_NAME" | tr ' ' '\n' | grep -qx docker; then
   sudo usermod -aG docker "$USER_NAME"
 fi
 
+# Mainnet forks are memory hungry; small VMs (1-2 GB) need swap or the kernel kills Anvil.
+MEM_MB=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
+if [ "$MEM_MB" -lt 3500 ] && [ "$(swapon --show --noheadings | wc -l)" -eq 0 ]; then
+  echo "==> ${MEM_MB} MB RAM and no swap: adding a 4 GB swap file"
+  sudo fallocate -l 4G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+  sudo chmod 600 /swapfile
+  sudo mkswap /swapfile
+  sudo swapon /swapfile
+  grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+fi
+
 echo "==> preparing $DIR"
 sudo install -d -o "$USER_NAME" -g "$USER_NAME" -m 755 "$DIR"
 
@@ -49,8 +60,8 @@ SIM_CHAINS=1,11155111
 RPC_URL_1=https://ethereum-rpc.publicnode.com,https://eth.drpc.org,https://1rpc.io/eth
 RPC_URL_11155111=https://ethereum-sepolia-rpc.publicnode.com,https://1rpc.io/sepolia
 CORS_ORIGINS=*
-MAX_CONCURRENT_FORKS=2
-WARM_FORKS_PER_CHAIN=1
+MAX_CONCURRENT_FORKS=$( [ "$MEM_MB" -lt 3500 ] && echo 1 || echo 2 )
+WARM_FORKS_PER_CHAIN=$( [ "$MEM_MB" -lt 3500 ] && echo 0 || echo 1 )
 ANALYSIS_TIMEOUT_MS=45000
 THREAT_INCLUDE_DEMO=false
 ENV

@@ -1,4 +1,7 @@
 name: Deploy analysis API
+# Needs, in the "production" environment: secrets DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY,
+# DEPLOY_KNOWN_HOSTS, and the repository variable ANALYSIS_API_URL (https://your-api-host).
+# Prepare the server once with deploy/bootstrap.sh. See "Publish the website" in the README.
 on:
   workflow_dispatch:
 permissions:
@@ -13,6 +16,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
       - name: Resolve private image name
@@ -50,3 +54,7 @@ jobs:
           printf '%s' "$GH_TOKEN" | ssh "$DEPLOY_USER@$DEPLOY_HOST" "docker login ghcr.io -u '$GH_USER' --password-stdin"
           ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd /opt/cognitia && API_IMAGE='$API_IMAGE' docker compose -f compose.yml pull && API_IMAGE='$API_IMAGE' docker compose -f compose.yml up -d --wait"
           curl --fail --retry 12 --retry-all-errors --retry-delay 10 "$API_URL/ready"
+      - name: Republish the site so the extension download points at this API
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run site.yml --ref "${GITHUB_REF_NAME}"

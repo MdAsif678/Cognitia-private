@@ -1,0 +1,172 @@
+/* =================================================================== motion
+   One easing curve (--ease). Entrances rise 14px and fade. Everything honours
+   prefers-reduced-motion (see the end of this file). */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms; animation-timing-function: var(--ease); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
+
+/* Page intro: children rise one after another on first paint. */
+.intro-copy > *, .page-head > * { animation: rise 700ms var(--ease) both; }
+.intro-copy > :nth-child(2), .page-head > :nth-child(2) { animation-delay: 70ms; }
+.intro-copy > :nth-child(3), .page-head > :nth-child(3) { animation-delay: 140ms; }
+.intro-copy > :nth-child(4), .page-head > :nth-child(4) { animation-delay: 210ms; }
+.intro-copy > :nth-child(5), .page-head > :nth-child(5) { animation-delay: 280ms; }
+.intro-copy > :nth-child(n + 6), .page-head > :nth-child(n + 6) { animation-delay: 340ms; }
+
+/* Scroll reveal: only hidden when JS runs (html.js), so the page never depends on it. */
+.js [data-reveal] { opacity: 0; transform: translateY(18px); transition: opacity 700ms var(--ease), transform 700ms var(--ease); }
+.js [data-reveal].in { opacity: 1; transform: none; }
+/* Staggered children use an animation (fill: backwards) so their own hover transitions stay instant. */
+.js [data-reveal] [data-stagger] > * { opacity: 0; }
+.js [data-reveal].in [data-stagger] > * { opacity: 1; animation: rise 620ms var(--ease) backwards; animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
+
+/* ------------------------------------------------------------ hero layout */
+.intro { position: relative; overflow: hidden; padding: 88px 0 96px; isolation: isolate; }
+.intro::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(rgba(17, 17, 17, 0.09) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 75% at 75% 40%, #000 25%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 75% at 75% 40%, #000 25%, transparent 72%);
+}
+.intro-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 56px; align-items: center; }
+.intro-copy .lead { margin-top: 22px; }
+@media (max-width: 920px) {
+  .intro-grid { grid-template-columns: 1fr; gap: 48px; }
+  .intro { padding: 56px 0 72px; }
+}
+
+/* ------------------------------------------------- animated interception
+   A looping 9 s story: the site asks, Cognitia holds it, four checks run,
+   the verdict lands and Reject is suggested. Pure CSS. */
+.intercept { position: relative; max-width: 460px; justify-self: end; width: 100%; animation: rise 800ms var(--ease) 220ms both; }
+@media (max-width: 920px) { .intercept { justify-self: start; } }
+.ic-site, .ic-wallet {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+  font: 500 11.5px/1.3 var(--mono); color: var(--muted);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+}
+.ic-site b, .ic-wallet b { color: var(--ink); font-weight: 500; }
+.ic-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line-2); flex: none; }
+.ic-site .ic-dot { background: var(--amber-mark); }
+.ic-link { position: relative; height: 30px; margin-left: 27px; border-left: 1.5px dashed var(--line-2); }
+.ic-link::after {
+  content: ''; position: absolute; left: -4.5px; top: 0; width: 7.5px; height: 7.5px; border-radius: 50%; background: var(--ink);
+  animation: ic-packet 9s var(--ease) infinite;
+}
+.ic-link.late::after { animation-name: ic-packet-late; background: var(--red); }
+@keyframes ic-packet { 0% { top: 0; opacity: 0; } 3% { opacity: 1; } 11% { top: 22px; opacity: 1; } 14%, 100% { top: 22px; opacity: 0; } }
+@keyframes ic-packet-late { 0%, 80% { top: 0; opacity: 0; } 82% { opacity: 1; } 90% { top: 22px; opacity: 1; } 93%, 100% { top: 22px; opacity: 0; } }
+
+.ic-card {
+  position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card); overflow: hidden;
+}
+.ic-head { display: flex; justify-content: space-between; align-items: center; padding: 13px 18px; background: var(--ground); border-bottom: 1px solid var(--line); }
+.ic-head .eyebrow { font-size: 10px; }
+.ic-held { display: inline-flex; align-items: center; gap: 6px; font: 500 10px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); }
+.ic-held::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 1.4s ease-in-out infinite; }
+.ic-body { padding: 18px; display: grid; gap: 14px; }
+.ic-call { font: 500 13px/1.45 var(--mono); color: var(--ink); }
+.ic-call span { color: var(--muted); }
+.ic-scan { position: relative; height: 3px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.ic-scan::after { content: ''; position: absolute; inset: 0; transform-origin: left; background: var(--ink); animation: ic-scan 9s var(--ease) infinite; }
+@keyframes ic-scan { 0%, 13% { transform: scaleX(0); opacity: 1; } 58% { transform: scaleX(1); opacity: 1; } 64%, 100% { transform: scaleX(1); opacity: 0; } }
+
+.ic-steps { display: grid; gap: 8px; }
+.ic-steps li { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); animation: ic-step 9s var(--ease) infinite; }
+.ic-steps li::before {
+  content: ''; width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid var(--line-2); flex: none;
+  background-position: center; background-size: 9px; background-repeat: no-repeat;
+  animation: inherit;
+  animation-name: ic-check;
+}
+.ic-steps li:nth-child(1) { animation-delay: 0s; }
+.ic-steps li:nth-child(2) { animation-delay: 0.95s; }
+.ic-steps li:nth-child(3) { animation-delay: 1.9s; }
+.ic-steps li:nth-child(4) { animation-delay: 2.85s; }
+@keyframes ic-step { 0%, 20% { color: var(--muted); } 24%, 88% { color: var(--ink); } 96%, 100% { color: var(--muted); } }
+@keyframes ic-check {
+  0%, 20% { border-color: var(--line-2); background-color: transparent; background-image: none; }
+  24%, 88% {
+    border-color: var(--green); background-color: var(--green);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 5.2 4.1 7.3 8 3' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+  96%, 100% { border-color: var(--line-2); background-color: transparent; background-image: none; }
+}
+.ic-result { display: grid; }
+.ic-result > * { grid-area: 1 / 1; }
+.ic-pending {
+  display: grid; gap: 8px; align-content: center; padding: 14px 16px; border-radius: 10px;
+  background: var(--ground); border: 1px dashed var(--line-2);
+  animation: ic-pending 9s var(--ease) infinite;
+}
+.ic-pending span {
+  height: 9px; border-radius: 5px;
+  background: linear-gradient(90deg, var(--line) 0%, #f3f2ee 50%, var(--line) 100%) 0 0 / 200% 100%;
+  animation: shimmer 1.3s linear infinite;
+}
+.ic-pending span:first-child { width: 38%; height: 14px; }
+.ic-pending span:last-child { width: 82%; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@keyframes ic-pending { 0%, 58% { opacity: 1; } 64%, 96% { opacity: 0; } 100% { opacity: 1; } }
+.ic-verdict {
+  display: grid; gap: 4px; padding: 14px 16px; border-radius: 10px; background: #fbf1ef; border: 1px solid #f0d3cc;
+  animation: ic-verdict 9s var(--ease) infinite;
+}
+.ic-verdict strong { font: 800 20px/1.1 var(--display); letter-spacing: -0.02em; color: var(--ink); }
+.ic-verdict strong i { font-style: normal; color: var(--red); }
+.ic-verdict span { font-size: 12.5px; color: var(--text); }
+@keyframes ic-verdict { 0%, 60% { opacity: 0; transform: translateY(8px) scale(0.98); } 66%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.ic-actions { display: flex; gap: 8px; }
+.ic-actions span {
+  flex: 1; height: 34px; display: grid; place-items: center; border-radius: var(--r-pill);
+  font-size: 12.5px; font-weight: 600; border: 1px solid var(--line-2); color: var(--muted);
+}
+.ic-actions .ic-reject { animation: ic-reject 9s var(--ease) infinite; }
+@keyframes ic-reject {
+  0%, 68% { background: transparent; color: var(--muted); border-color: var(--line-2); box-shadow: 0 0 0 0 rgba(17, 17, 17, 0); }
+  72%, 94% { background: var(--ink); color: #fff; border-color: var(--ink); box-shadow: 0 0 0 5px rgba(17, 17, 17, 0.08); }
+  100% { background: transparent; color: var(--muted); border-color: var(--line-2); box-shadow: none; }
+}
+.ic-wallet { position: relative; }
+.ic-wallet .ic-dot { animation: ic-wallet-dot 9s var(--ease) infinite; }
+@keyframes ic-wallet-dot { 0%, 84% { background: var(--line-2); } 88%, 97% { background: var(--red); } 100% { background: var(--line-2); } }
+.ic-msg { display: grid; }
+.ic-msg > * { grid-area: 1 / 1; }
+.ic-msg .ic-wait { animation: ic-msg-out 9s var(--ease) infinite; }
+.ic-msg .ic-done { opacity: 0; animation: ic-msg-in 9s var(--ease) infinite; }
+@keyframes ic-msg-out { 0%, 84% { opacity: 1; } 88%, 97% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes ic-msg-in { 0%, 84% { opacity: 0; } 88%, 97% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ------------------------------------------------------------ card motion */
+.card .go { display: inline-flex; gap: 6px; align-items: center; }
+.card .go::after { content: '→'; transition: transform 200ms var(--ease); }
+a.card:hover .go::after { transform: translateX(4px); }
+a.card:hover { box-shadow: 0 20px 40px -28px rgba(17, 17, 17, 0.35); }
+.steps li { transition: background 240ms var(--ease); }
+.steps li:hover { background: #fdfdfb; }
+.grid li:hover { border-top-color: var(--ink); }
+.sample { transition: transform 400ms var(--ease), box-shadow 400ms var(--ease); }
+.sample:hover { transform: translateY(-3px); box-shadow: 0 32px 70px -30px rgba(17, 17, 17, 0.3); }
+
+/* live status pills breathe while still checking */
+[data-api-status]:not([data-state])::before,
+.status-pill:not([data-state])::before,
+.status-pill[data-state='']::before { animation: pulse 1.2s ease-in-out infinite; }
+
+/* ---------------------------------------------------------- reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important; transition-delay: 0s !important; scroll-behavior: auto !important;
+  }
+  .js [data-reveal], .js [data-reveal] [data-stagger] > * { opacity: 1; transform: none; }
+  /* show the finished story instead of the animation */
+  .ic-steps li { color: var(--ink); }
+  .ic-verdict, .ic-msg .ic-done { opacity: 1; animation: none !important; }
+  .ic-pending { opacity: 0; animation: none !important; }
+  .ic-msg .ic-wait { opacity: 0; animation: none !important; }
+}
