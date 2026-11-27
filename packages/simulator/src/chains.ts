@@ -13,19 +13,19 @@ import { parseUpstreamList } from "./upstreams";
 const DEFAULTS: ChainConfig[] = [
   {
     chainId: 1,
-    name: "Aurum Mainnet",
+    name: "Ethereum Mainnet",
     rpcUrl: "https://ethereum-rpc.publicnode.com",
     fallbackRpcUrls: ["https://eth.drpc.org", "https://1rpc.io/eth"],
     blockLag: 2,
   },
   {
     chainId: 11155111,
-    name: "Aurum Testnet",
+    name: "Sepolia",
     rpcUrl: "https://ethereum-sepolia-rpc.publicnode.com",
     fallbackRpcUrls: ["https://1rpc.io/sepolia"],
     blockLag: 2,
   },
-  { chainId: 31337, name: "Aurum Local", rpcUrl: "http://127.0.0.1:8545", blockLag: 0 },
+  { chainId: 31337, name: "Local Anvil", rpcUrl: "http://127.0.0.1:8545", blockLag: 0 },
 ];
 
 /**

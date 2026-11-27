@@ -47,7 +47,7 @@ console.log(`Funding ${recipient} on ${rpcUrl}`);
 
 // Native balance for gas. Anvil lets us set it outright rather than draining the deployer.
 await publicClient.request({ method: 'anvil_setBalance', params: [recipient, `0x${GAS_BUDGET.toString(16)}`] } as never);
-console.log(`  ${formatEther(GAS_BUDGET)} AUR for gas`);
+console.log(`  ${formatEther(GAS_BUDGET)} ETH for gas`);
 
 await send(
   await wallet.writeContract({ address: testToken, abi: parseAbi(['function mint(address,uint256)']), functionName: 'mint', args: [recipient, PUSD] }),
@@ -83,4 +83,4 @@ try {
 
 const balance = await publicClient.readContract({ address: testToken, abi: parseAbi(['function balanceOf(address) view returns (uint256)']), functionName: 'balanceOf', args: [recipient] });
 const nfts = await publicClient.readContract({ address: testNFT, abi: parseAbi(['function balanceOf(address) view returns (uint256)']), functionName: 'balanceOf', args: [recipient] });
-console.log(`Done. ${formatEther(balance)} pUSD, ${nfts} pNFT, ${formatEther(await publicClient.getBalance({ address: recipient }))} AUR.`);
+console.log(`Done. ${formatEther(balance)} pUSD, ${nfts} pNFT, ${formatEther(await publicClient.getBalance({ address: recipient }))} ETH.`);
