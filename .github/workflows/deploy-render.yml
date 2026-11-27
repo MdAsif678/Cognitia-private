@@ -1,10 +1,11 @@
 name: Deploy analysis API to Render
-# Runs after "MVP checks" passes on main, or by hand. Render builds services/api/Dockerfile itself
-# (render.yaml); this workflow only tells it to deploy, then waits for the live API to answer.
+# Render builds services/api/Dockerfile itself (render.yaml) and, with autoDeployTrigger
+# "checksPass", deploys a commit on main only after "MVP checks" succeeds for it. This workflow
+# then waits for the new API to answer and republishes the site so the extension download matches.
 #
-# Needs, in the "render" environment: secret RENDER_DEPLOY_HOOK_URL (Render → the service →
-# Settings → Deploy Hook). And the repository variable ANALYSIS_API_URL (https://<name>.onrender.com).
-# Until the secret exists the workflow skips with a notice instead of failing.
+# Optional repository secret RENDER_DEPLOY_HOOK_URL (Render → the service → Settings → Deploy Hook,
+# when your Render plan shows one): run this workflow by hand to force a deploy without a commit.
+# Repository variable ANALYSIS_API_URL (https://<name>.onrender.com) is used for the health check.
 on:
   workflow_run:
     workflows: [MVP checks]
@@ -18,36 +19,31 @@ jobs:
   deploy:
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
-    environment: render
     timeout-minutes: 25
     steps:
-      - name: Ask Render to deploy this commit
-        id: hook
+      - name: Force a deploy (manual runs with a deploy hook only)
+        if: github.event_name == 'workflow_dispatch'
         env:
           HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
           if [ -z "$HOOK" ]; then
-            echo "::notice::RENDER_DEPLOY_HOOK_URL is not set yet; nothing to deploy. See docs/DEPLOY.md."
-            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::No RENDER_DEPLOY_HOOK_URL secret: Render deploys by itself once the checks pass on main."
             exit 0
           fi
-          # Render deploys the latest commit of the branch the service tracks (main).
           curl --fail --silent --show-error -X POST "$HOOK" > /dev/null
           echo "Deploy requested."
       - name: Wait for the live API
-        if: steps.hook.outputs.skipped != 'true'
         env:
           API_URL: ${{ vars.ANALYSIS_API_URL }}
         run: |
           test -n "$API_URL" || { echo "::warning::Set the repository variable ANALYSIS_API_URL to check the deployment."; exit 0; }
-          # Render keeps the old instance serving until the new one is healthy; a free build takes
-          # several minutes, so give it time before checking that the API and its RPCs answer.
+          # Render keeps the old instance serving until the new one is healthy; a free build takes a
+          # few minutes, so give it time before checking that the API and its RPCs answer.
           sleep 240
           curl --fail --silent --show-error --max-time 120 --retry 30 --retry-all-errors --retry-delay 20 "$API_URL/ready"
           echo
           echo "### Analysis API is live at $API_URL" >> "$GITHUB_STEP_SUMMARY"
       - name: Republish the site so the extension download points at this API
-        if: steps.hook.outputs.skipped != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run site.yml --repo "$GITHUB_REPOSITORY" --ref main

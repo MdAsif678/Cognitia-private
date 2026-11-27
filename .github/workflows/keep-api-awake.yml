@@ -1,9 +1,9 @@
 name: Keep analysis API awake
 # Render's free instance sleeps after 15 minutes without traffic and takes about a minute to wake.
-# A light /health ping every 10 minutes keeps it awake for visitors (750 free hours cover a month).
+# This is a BACKUP ping: GitHub delays scheduled runs when busy (gaps of hours have been observed),
+# so the main keep-awake is a free cron-job.org job hitting /health every 10 minutes (docs/DEPLOY.md).
 #
-# Runs only on public repositories, where Actions minutes are free. On a private repository use a
-# free external pinger instead (see docs/DEPLOY.md): ~4,300 runs a month would exceed the free minutes.
+# Runs only on public repositories, where Actions minutes are free.
 on:
   schedule:
     - cron: '*/10 * * * *'
