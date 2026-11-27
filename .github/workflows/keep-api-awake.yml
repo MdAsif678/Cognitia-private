@@ -1,0 +1,24 @@
+name: Keep analysis API awake
+# Render's free instance sleeps after 15 minutes without traffic and takes about a minute to wake.
+# A light /health ping every 10 minutes keeps it awake for visitors (750 free hours cover a month).
+#
+# Runs only on public repositories, where Actions minutes are free. On a private repository use a
+# free external pinger instead (see docs/DEPLOY.md): ~4,300 runs a month would exceed the free minutes.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  ping:
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Ping /health
+        env:
+          API_URL: ${{ vars.ANALYSIS_API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then echo "ANALYSIS_API_URL is not set; nothing to ping."; exit 0; fi
+          curl --fail --silent --show-error --max-time 120 --retry 2 --retry-delay 15 "$API_URL/health" > /dev/null
+          echo "API awake"

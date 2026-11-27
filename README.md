@@ -30,12 +30,12 @@ npm run build:site    # extension ZIP + static site in apps/site/dist
 
 ### Going live: what still has to be filled in
 
-**Step-by-step guide, including getting a server if you don't have one: [docs/DEPLOY.md](docs/DEPLOY.md).**
+**Step-by-step guide (free, no credit card): [docs/DEPLOY.md](docs/DEPLOY.md).**
 
 Everything below is intentionally empty in the repository. Nothing else needs code changes.
 
 1. **GitHub Pages**: Settings → Pages → Source: *GitHub Actions*. (Pages on a private repository needs a paid GitHub plan; otherwise make the repository public.)
-2. **Analysis API server**: any Linux VM with Docker. Run `deploy/bootstrap.sh <api-hostname>` on it, point DNS at it, then add to the `production` environment the secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`, and the repository variable `ANALYSIS_API_URL` (e.g. `https://api.example.com`). Run **Deploy analysis API**. It republishes the site when it finishes.
+2. **Analysis API on Render (free)**: Render → New → Blueprint → this repository (`render.yaml`). Then add the secret `RENDER_DEPLOY_HOOK_URL` to the `render` environment and the repository variable `ANALYSIS_API_URL` (e.g. `https://cognitia-api.onrender.com`). After that, every push to `main` that passes the checks redeploys the API and republishes the site. A Linux VM also works: see the alternative at the end of docs/DEPLOY.md.
 3. **Sepolia demo contracts**: in the `sepolia` environment add `SEPOLIA_RPC_URL` and `SEPOLIA_DEPLOYER_KEY` (a testnet-only key with a little Sepolia ETH; optional `ETHERSCAN_API_KEY` to verify sources, optional variable `SEPOLIA_ATTACKER_ADDRESS`). Run **Deploy demo contracts to Sepolia**. It commits `incoming/ps2-project/deployments/sepolia.json` and republishes the site.
 4. **Optional links**: repository variables `SITE_REPO_URL`, `CHROME_STORE_URL`, `DEMO_VIDEO_URL`, and documented real attack transactions for one-click replay in `realAttackReplays` in `apps/site/site.config.json`.
 
@@ -133,11 +133,13 @@ The smoke test sends the eight demo requests (including the NFT rewards sweep) p
 The active workflows are at the repository root in `.github/workflows`; workflows inside teammate folders are historical and do not run.
 
 - **MVP checks**: clean install, typechecks, all tests, contract tests, seeded demo smoke tests, extension artifact, evidence artifact and Docker build.
-- **Deploy analysis API**: runs checks, publishes a private GHCR image, deploys to a Docker VM through verified SSH, and checks `/ready` over HTTPS.
+- **Deploy analysis API to Render**: after **MVP checks** passes on `main` (or by hand), triggers the Render deploy hook, waits for `/ready`, and republishes the site.
+- **Keep analysis API awake**: pings `/health` every 10 minutes on public repositories so Render's free instance doesn't sleep.
+- **Deploy analysis API** (VM alternative): runs checks, publishes a private GHCR image, deploys to a Docker VM through verified SSH, and checks `/ready` over HTTPS.
 - **Deploy demo contracts to Sepolia**: manual testnet-only deployment with a chain-ID check; records the addresses for the site and republishes it. The local bait dapp (`incoming/ps2-project/demo`) stays restricted to chain 31337; the public Sepolia demo is `apps/site/demo.html`.
 - **Publish site**: builds the extension ZIP against `ANALYSIS_API_URL` and publishes `apps/site` to GitHub Pages.
 
-For API deployment, run `deploy/bootstrap.sh <api-hostname>` on the VM as the deployment user. It installs Docker, creates `/opt/cognitia` owned by that user, and writes a keyless `/opt/cognitia/.env` (an existing one is left alone); `deploy/.env.example` documents the same settings if you would rather write it by hand. Point an A record for the hostname at the VM and open ports 80 and 443 — Caddy needs port 80 to obtain its certificate. Set repository variable `ANALYSIS_API_URL` to `https://your-api-host`. Configure the `production` environment secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, and `DEPLOY_KNOWN_HOSTS` (verified host key, not a runtime trust-on-first-use scan). The deployment user must be able to run Docker. Run **Deploy analysis API** manually. Caddy terminates HTTPS; Anvil forks and the API port are not publicly exposed. The extension artifact is built with the configured API URL. Public deployments should restrict origins and add authenticated access if serving beyond a controlled demo.
+For the VM alternative, run `deploy/bootstrap.sh <api-hostname>` on the VM as the deployment user. It installs Docker, creates `/opt/cognitia` owned by that user, and writes a keyless `/opt/cognitia/.env` (an existing one is left alone); `deploy/.env.example` documents the same settings if you would rather write it by hand. Point an A record for the hostname at the VM and open ports 80 and 443 — Caddy needs port 80 to obtain its certificate. Set repository variable `ANALYSIS_API_URL` to `https://your-api-host`. Configure the `production` environment secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, and `DEPLOY_KNOWN_HOSTS` (verified host key, not a runtime trust-on-first-use scan). The deployment user must be able to run Docker. Run **Deploy analysis API** manually. Caddy terminates HTTPS; Anvil forks and the API port are not publicly exposed. The extension artifact is built with the configured API URL. Public deployments should restrict origins and add authenticated access if serving beyond a controlled demo.
 
 For Sepolia, configure environment secrets `SEPOLIA_RPC_URL` and `SEPOLIA_DEPLOYER_KEY` using a dedicated testnet-only account with test ETH. No deployment credentials are stored in this repository. Workflows are supplied for deployment; local verification does not imply a production or Sepolia deployment has run.
 
