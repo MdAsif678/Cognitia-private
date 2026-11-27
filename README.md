@@ -35,7 +35,7 @@ npm run build:site    # extension ZIP + static site in apps/site/dist
 Everything below is intentionally empty in the repository. Nothing else needs code changes.
 
 1. **GitHub Pages**: Settings → Pages → Source: *GitHub Actions*. (Pages on a private repository needs a paid GitHub plan; otherwise make the repository public.)
-2. **Analysis API on Render (free)**: Render → New → Blueprint → this repository (`render.yaml`). Then add the secret `RENDER_DEPLOY_HOOK_URL` to the `render` environment and the repository variable `ANALYSIS_API_URL` (e.g. `https://cognitia-api.onrender.com`). After that, every push to `main` that passes the checks redeploys the API and republishes the site. A Linux VM also works: see the alternative at the end of docs/DEPLOY.md.
+2. **Analysis API on Render (free)**: Render → New → Blueprint → this repository (`render.yaml`). Then set the repository variable `ANALYSIS_API_URL` (e.g. `https://cognitia-api.onrender.com`). Render deploys each push to `main` only after the GitHub Actions checks pass, and the site is republished. A Linux VM also works: see the alternative at the end of docs/DEPLOY.md.
 3. **Sepolia demo contracts**: in the `sepolia` environment add `SEPOLIA_RPC_URL` and `SEPOLIA_DEPLOYER_KEY` (a testnet-only key with a little Sepolia ETH; optional `ETHERSCAN_API_KEY` to verify sources, optional variable `SEPOLIA_ATTACKER_ADDRESS`). Run **Deploy demo contracts to Sepolia**. It commits `incoming/ps2-project/deployments/sepolia.json` and republishes the site.
 4. **Optional links**: repository variables `SITE_REPO_URL`, `CHROME_STORE_URL`, `DEMO_VIDEO_URL`, and documented real attack transactions for one-click replay in `realAttackReplays` in `apps/site/site.config.json`.
 
@@ -133,8 +133,8 @@ The smoke test sends the eight demo requests (including the NFT rewards sweep) p
 The active workflows are at the repository root in `.github/workflows`; workflows inside teammate folders are historical and do not run.
 
 - **MVP checks**: clean install, typechecks, all tests, contract tests, seeded demo smoke tests, extension artifact, evidence artifact and Docker build.
-- **Deploy analysis API to Render**: after **MVP checks** passes on `main` (or by hand), triggers the Render deploy hook, waits for `/ready`, and republishes the site.
-- **Keep analysis API awake**: pings `/health` every 10 minutes on public repositories so Render's free instance doesn't sleep.
+- **Deploy analysis API to Render**: after **MVP checks** passes on `main` (Render deploys the same commit once checks pass), waits for `/ready` and republishes the site; an optional deploy hook allows forced manual deploys.
+- **Keep analysis API awake**: backup `/health` ping on public repositories; GitHub delays scheduled runs, so use cron-job.org as the main keep-awake (docs/DEPLOY.md).
 - **Deploy analysis API** (VM alternative): runs checks, publishes a private GHCR image, deploys to a Docker VM through verified SSH, and checks `/ready` over HTTPS.
 - **Deploy demo contracts to Sepolia**: manual testnet-only deployment with a chain-ID check; records the addresses for the site and republishes it. The local bait dapp (`incoming/ps2-project/demo`) stays restricted to chain 31337; the public Sepolia demo is `apps/site/demo.html`.
 - **Publish site**: builds the extension ZIP against `ANALYSIS_API_URL` and publishes `apps/site` to GitHub Pages.

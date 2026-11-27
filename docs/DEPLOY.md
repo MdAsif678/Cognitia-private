@@ -34,17 +34,10 @@ takes about 20–30 seconds there.
 4. The first build takes 5–10 minutes. When it says **Live**, copy the service URL at the top,
    for example `https://cognitia-api.onrender.com` (Render may add a suffix if the name is taken).
    Open `<that URL>/ready` in a browser: it should show `"ready":true`.
-5. In the service: **Settings → Deploy Hook → copy** the URL. Treat it like a password.
 
 ## 2. Put the settings into GitHub
 
 Repository → **Settings**:
-
-**Environments → New environment → `render`**, add the **secret**:
-
-| Secret | Value |
-|---|---|
-| `RENDER_DEPLOY_HOOK_URL` | the Deploy Hook URL from step 1.5 |
 
 **Secrets and variables → Actions → Variables → New repository variable**:
 
@@ -78,8 +71,9 @@ tokens. Use another address of yours.
 2. **Publish site → Run workflow** (if it hasn't run already). Its summary shows the site URL
    (`https://<user>.github.io/<repo>/`).
 
-From now on every push to `main` runs **MVP checks**; when they pass, **Deploy analysis API to
-Render** redeploys the API and republishes the site. You can also run it by hand.
+From now on every push to `main` runs **MVP checks** in GitHub Actions. Render deploys that commit
+only after the checks pass (`autoDeployTrigger: checksPass` in `render.yaml`), and **Deploy
+analysis API to Render** waits for the new API and republishes the site.
 
 ## 5. Check it
 
@@ -94,10 +88,12 @@ Render** redeploys the API and republishes the site. You can also run it by hand
 Render's free instance sleeps after 15 minutes without traffic; the first request after that waits
 about a minute.
 
-- **Public repository:** nothing to do. **Keep analysis API awake** pings `/health` every 10 minutes.
-- **Private repository:** that workflow skips itself (it would use up the free Actions minutes).
-  Instead, create a free monitor at **uptimerobot.com** or **cron-job.org** that requests
-  `<ANALYSIS_API_URL>/health` every 10 minutes.
+Create a free job at **cron-job.org** (no card) that requests `<ANALYSIS_API_URL>/health` every
+10 minutes. **UptimeRobot** works too.
+
+The **Keep analysis API awake** workflow is only a backup: GitHub runs scheduled workflows late
+when it is busy (observed gaps of 5–10 hours instead of 10 minutes), so it cannot keep the
+instance awake on its own. It runs on public repositories only.
 
 750 free instance hours a month cover one service running all month.
 
