@@ -4,6 +4,43 @@
 
 Cognitia holds an unsigned EVM transaction or signature request, simulates its effect on an isolated Anvil fork, and shows a severity-ranked report before forwarding to the wallet. Nothing is sent to the upstream chain during analysis.
 
+## Public website
+
+`apps/site` is the public face of the project, a static site published to GitHub Pages by GitHub Actions:
+
+| Page | What it does |
+|---|---|
+| `index.html` | Landing page: what Cognitia does, how interception works, what it catches, honest limits. |
+| `install.html` | Downloads the extension ZIP (built in the same workflow against the live API) with install steps. |
+| `playground.html` | No install needed. Runs real attack patterns against **live mainnet state**, any pasted wallet request, or a replay of a mined transaction through the public API, and renders the extension's real report component. |
+| `demo.html` | A deliberately malicious "rewards" dapp on Sepolia using our deployed drainer contracts. With the extension and MetaMask installed, every offer is intercepted before signing. |
+
+Run it locally against the local demo stack (with `npm run dev:demo` running):
+
+```sh
+# apps/site/.env.local (gitignored)
+SITE_API_BASE_URL=http://localhost:8080
+SITE_DEMO_DEPLOYMENT=incoming/ps2-project/demo/deployment.json
+```
+
+```sh
+npm run dev:site      # http://localhost:5180
+npm run build:site    # extension ZIP + static site in apps/site/dist
+```
+
+### Going live: what still has to be filled in
+
+**Step-by-step guide, including getting a server if you don't have one: [docs/DEPLOY.md](docs/DEPLOY.md).**
+
+Everything below is intentionally empty in the repository. Nothing else needs code changes.
+
+1. **GitHub Pages**: Settings → Pages → Source: *GitHub Actions*. (Pages on a private repository needs a paid GitHub plan; otherwise make the repository public.)
+2. **Analysis API server**: any Linux VM with Docker. Run `deploy/bootstrap.sh <api-hostname>` on it, point DNS at it, then add to the `production` environment the secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`, and the repository variable `ANALYSIS_API_URL` (e.g. `https://api.example.com`). Run **Deploy analysis API**. It republishes the site when it finishes.
+3. **Sepolia demo contracts**: in the `sepolia` environment add `SEPOLIA_RPC_URL` and `SEPOLIA_DEPLOYER_KEY` (a testnet-only key with a little Sepolia ETH; optional `ETHERSCAN_API_KEY` to verify sources, optional variable `SEPOLIA_ATTACKER_ADDRESS`). Run **Deploy demo contracts to Sepolia**. It commits `incoming/ps2-project/deployments/sepolia.json` and republishes the site.
+4. **Optional links**: repository variables `SITE_REPO_URL`, `CHROME_STORE_URL`, `DEMO_VIDEO_URL`, and documented real attack transactions for one-click replay in `realAttackReplays` in `apps/site/site.config.json`.
+
+Until the API is configured the site still publishes: pages show "Analysis API not configured yet" instead of failing silently, and the demo page says the contracts are not deployed yet.
+
 ## Run the complete local demo
 
 Requires Node 22+, Python 3 and [Foundry](https://getfoundry.sh/introduction/installation/) (`anvil`, `forge`, `cast`).
@@ -50,7 +87,7 @@ The extension's error screen retains an explicit “continue without analysis”
 | State differences | Native balance/gas, ERC-20 balances and allowances, ERC-721 token approvals/ownership, ERC-721/1155 operator permissions, ERC-1155 balances |
 | Intent and hidden effects | Standard calldata, unknown selectors, internal transfers, reverts, delegatecall targets |
 | Threat matching | Chain-scoped address/domain records plus exact runtime hash matching from fork observations; evidence includes provenance |
-| Demo attack | Deployed `FakeRewardsDrainer.claim()` spends the seeded allowance; approvals and permits demonstrate later drains |
+| Demo attack | Deployed `FakeRewardsDrainer.claim()` spends the seeded allowance; `FakeNFTRewards` is the "verify eligibility (approve-all) → claim rewards" flow that sweeps every NFT; approvals and permits demonstrate later drains |
 | Before signing | Provider interception, pending review, rejection, immutable reviewed payload and exactly-once forwarding |
 | Human report | Severity, explanations, immediate vs conditional effects, exposed assets, coverage, assumptions and downloadable JSON |
 
@@ -89,7 +126,7 @@ DEMO_WEB_URL=http://localhost:13000 npm run test:extension
 npm run test:mainnet
 ```
 
-The smoke test sends the seven demo requests plus unknown calldata and personal signing through the real HTTP API, validates every response using the extension schema, checks expected severities/state changes, and verifies that the upstream block is unchanged. Reports are saved in `artifacts/demo-reports`. `test:packaged` copies only the built server into a temporary folder, checks readiness and disabled debug routes, and repeats the scenarios without repository dependencies. Its reports are in `artifacts/packaged-reports`. CI also runs the same scenarios against the Docker image and uploads `artifacts/container-reports`. `TEST_API_URL` and `TEST_REPORT_DIR` override the smoke-test endpoint and evidence directory. Solidity and fork integration tests also cover ERC-1155 transfers, single-NFT approvals, delegatecalls, concurrency and upstream state isolation.
+The smoke test sends the eight demo requests (including the NFT rewards sweep) plus unknown calldata and personal signing through the real HTTP API, validates every response using the extension schema, checks expected severities/state changes, and verifies that the upstream block is unchanged. Reports are saved in `artifacts/demo-reports`. `test:packaged` copies only the built server into a temporary folder, checks readiness and disabled debug routes, and repeats the scenarios without repository dependencies. Its reports are in `artifacts/packaged-reports`. CI also runs the same scenarios against the Docker image and uploads `artifacts/container-reports`. `TEST_API_URL` and `TEST_REPORT_DIR` override the smoke-test endpoint and evidence directory. Solidity and fork integration tests also cover ERC-1155 transfers, single-NFT approvals, delegatecalls, concurrency and upstream state isolation.
 
 ## GitHub Actions deployment
 
@@ -97,7 +134,8 @@ The active workflows are at the repository root in `.github/workflows`; workflow
 
 - **MVP checks**: clean install, typechecks, all tests, contract tests, seeded demo smoke tests, extension artifact, evidence artifact and Docker build.
 - **Deploy analysis API**: runs checks, publishes a private GHCR image, deploys to a Docker VM through verified SSH, and checks `/ready` over HTTPS.
-- **Deploy demo contracts to Sepolia**: manual testnet-only deployment with a chain-ID check and downloadable deployment receipts. The local bait dapp intentionally remains restricted to chain 31337.
+- **Deploy demo contracts to Sepolia**: manual testnet-only deployment with a chain-ID check; records the addresses for the site and republishes it. The local bait dapp (`incoming/ps2-project/demo`) stays restricted to chain 31337; the public Sepolia demo is `apps/site/demo.html`.
+- **Publish site**: builds the extension ZIP against `ANALYSIS_API_URL` and publishes `apps/site` to GitHub Pages.
 
 For API deployment, run `deploy/bootstrap.sh <api-hostname>` on the VM as the deployment user. It installs Docker, creates `/opt/cognitia` owned by that user, and writes a keyless `/opt/cognitia/.env` (an existing one is left alone); `deploy/.env.example` documents the same settings if you would rather write it by hand. Point an A record for the hostname at the VM and open ports 80 and 443 — Caddy needs port 80 to obtain its certificate. Set repository variable `ANALYSIS_API_URL` to `https://your-api-host`. Configure the `production` environment secrets `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, and `DEPLOY_KNOWN_HOSTS` (verified host key, not a runtime trust-on-first-use scan). The deployment user must be able to run Docker. Run **Deploy analysis API** manually. Caddy terminates HTTPS; Anvil forks and the API port are not publicly exposed. The extension artifact is built with the configured API URL. Public deployments should restrict origins and add authenticated access if serving beyond a controlled demo.
 
@@ -105,4 +143,4 @@ For Sepolia, configure environment secrets `SEPOLIA_RPC_URL` and `SEPOLIA_DEPLOY
 
 ## Layout
 
-`packages/shared`: contracts/schemas; `packages/simulator`: fork and diff engine; `services/api`: HTTP pipeline; `incoming/atif-extension`: Chrome extension; `incoming/swastik-risk-engine`: deterministic rules/adapters; `incoming/integration`: bridge; `incoming/ps2-project`: Solidity demo and dapp. The extension and risk engine are now npm workspaces, installed from the root lockfile. The legacy Next.js workbench has no default synthetic simulation; use the root API for live reports.
+`apps/site`: public website (landing, install, playground, live demo); `packages/shared`: contracts/schemas; `packages/simulator`: fork and diff engine; `services/api`: HTTP pipeline; `incoming/atif-extension`: Chrome extension; `incoming/swastik-risk-engine`: deterministic rules/adapters; `incoming/integration`: bridge; `incoming/ps2-project`: Solidity demo and dapp. The extension and risk engine are now npm workspaces, installed from the root lockfile. The legacy Next.js workbench has no default synthetic simulation; use the root API for live reports.

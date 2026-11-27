@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Cognitia stops every wallet request, simulates it against live chain state and shows a severity-ranked risk report before you sign." />
+    <title>Cognitia · Never sign blind</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%23111'/><rect x='10' y='10' width='3' height='3' fill='%23c22f1c'/></svg>" />
+    <meta name="color-scheme" content="light" />
+    <script>document.documentElement.classList.add('js')</script>
+    <link rel="stylesheet" href="./src/styles/site.css" />
+    <script type="module" src="./src/landing.ts"></script>
+  </head>
+  <body>
+    <site-header current=""></site-header>
+
+    <main>
+      <section class="intro">
+        <div class="wrap intro-grid">
+          <div class="intro-copy">
+            <p class="eyebrow">Pre-execution transaction interceptor</p>
+            <h1 class="display" style="margin-top: 18px">Never sign blind<span class="dot">.</span></h1>
+            <p class="lead">
+              Cognitia catches every transaction and signature request before your wallet shows it. It
+              runs the request on a private copy of the live blockchain and shows you, in plain words, what
+              would really happen to your assets. Then you decide.
+            </p>
+            <div class="intro-actions">
+              <a class="button" href="./install.html">Download the extension <span class="arrow">→</span></a>
+              <a class="button secondary" href="./playground.html">Try it without installing</a>
+            </div>
+            <div class="intro-meta">
+              <span>Nothing is broadcast while analysing</span>
+              <span>Works with MetaMask and EIP-6963 wallets</span>
+              <span data-api-status>Checking analysis API…</span>
+            </div>
+          </div>
+
+          <figure class="intercept" aria-label="Illustration: a claim request is held, simulated and rated critical before the wallet opens">
+            <div class="ic-site"><span class="ic-dot"></span><span><b>aura-rewards.xyz</b> asks your wallet to sign</span></div>
+            <div class="ic-link" aria-hidden="true"></div>
+            <div class="ic-card">
+              <div class="ic-head"><span class="eyebrow">Cognitia · review</span><span class="ic-held">Held</span></div>
+              <div class="ic-body">
+                <p class="ic-call">claim() <span>→ 0xB7f8…4F5e · 0 ETH</span></p>
+                <div class="ic-scan" aria-hidden="true"></div>
+                <ul class="ic-steps">
+                  <li>Fork live state at the latest block</li>
+                  <li>Execute the exact request</li>
+                  <li>Diff balances and approvals</li>
+                  <li>Match the drainer database</li>
+                </ul>
+                <div class="ic-result">
+                  <div class="ic-pending" aria-hidden="true"><span></span><span></span></div>
+                  <div class="ic-verdict">
+                    <strong>Critical<i>.</i></strong>
+                    <span>Moves 500 pUSD from your wallet to an address you never named.</span>
+                  </div>
+                </div>
+                <div class="ic-actions"><span class="ic-reject">Reject</span><span>Continue to wallet</span></div>
+              </div>
+            </div>
+            <div class="ic-link late" aria-hidden="true"></div>
+            <div class="ic-wallet"><span class="ic-dot"></span><span class="ic-msg"><span class="ic-wait"><b>Wallet</b> waiting, popup not opened</span><span class="ic-done"><b>Rejected</b> · nothing was signed</span></span></div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section" id="how">
+        <div class="wrap" data-reveal>
+          <div class="section-head">
+            <p class="eyebrow">How it works</p>
+            <h2 class="title">What happens when a site asks you to sign<span class="dot">.</span></h2>
+          </div>
+          <ol class="steps" data-stagger>
+            <li>
+              <span class="num">01 · INTERCEPT</span>
+              <h3>The request is held</h3>
+              <p>The extension sits between the website and your wallet. The wallet popup does not open yet.</p>
+            </li>
+            <li>
+              <span class="num">02 · SIMULATE</span>
+              <h3>It runs on a private fork</h3>
+              <p>An isolated Anvil fork of mainnet or Sepolia, pinned to a verified block, executes the exact request. Nothing reaches the real chain.</p>
+            </li>
+            <li>
+              <span class="num">03 · ASSESS</span>
+              <h3>Effects become a verdict</h3>
+              <p>Calldata is decoded, before/after balances and approvals are diffed, and addresses, bytecode and domains are checked against a drainer database.</p>
+            </li>
+            <li>
+              <span class="num">04 · DECIDE</span>
+              <h3>You choose</h3>
+              <p><strong>Reject</strong> cancels the request (code 4001). <strong>Continue</strong> forwards the exact reviewed payload to your wallet, once.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split" data-reveal>
+          <div class="section-head" style="margin: 0">
+            <p class="eyebrow">The report</p>
+            <h2 class="title">A verdict, not a wall of hex<span class="dot">.</span></h2>
+            <p>
+              Each report starts with a severity and a one-line explanation, then shows the exact state
+              changes: what you lose now, what an attacker could take next, and what was checked. If
+              analysis fails, the report says so. A failure is never shown as safe.
+            </p>
+            <ul class="list" style="margin-top: 8px">
+              <li>Immediate changes vs. what a signature allows later</li>
+              <li>Native, ERC-20, ERC-721 and ERC-1155 balances, allowances and operators</li>
+              <li>Coverage and assumptions stated openly</li>
+              <li>Downloadable JSON evidence for every verdict</li>
+            </ul>
+          </div>
+          <figure class="sample" aria-label="Example report">
+            <div class="sample-top">
+              <span class="eyebrow">Cognitia · review</span>
+              <span class="sev-tag" data-severity="critical">Critical</span>
+            </div>
+            <div class="sample-body">
+              <p class="sample-verdict">This "reward" sweeps your NFTs<span class="dot">.</span></p>
+              <p class="muted small-text">claimRewards() on an unverified contract uses the approve-all you gave it a minute ago to move every pNFT you own to another address.</p>
+              <table class="diff">
+                <thead><tr><th>Asset</th><th>Owner before</th><th>Owner after</th></tr></thead>
+                <tbody>
+                  <tr><td>pNFT #1</td><td>You</td><td class="neg">0x7099…79C8</td></tr>
+                  <tr><td>pNFT #2</td><td>You</td><td class="neg">0x7099…79C8</td></tr>
+                  <tr><td>pNFT #3</td><td>You</td><td class="neg">0x7099…79C8</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="sample-actions"><span class="primary">Reject</span><span>Continue to wallet</span></div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap" data-reveal>
+          <div class="section-head">
+            <p class="eyebrow">What it catches</p>
+            <h2 class="title">The tricks drainers actually use<span class="dot">.</span></h2>
+          </div>
+          <ul class="grid" data-stagger>
+            <li><span class="sev-tag" data-severity="high">High</span><h3>Unlimited token approvals</h3><p>approve(spender, max) to an unknown or unverified address, with the amount an attacker could then take.</p></li>
+            <li><span class="sev-tag" data-severity="high">High</span><h3>Approve-all on NFTs</h3><p>setApprovalForAll on ERC-721 and ERC-1155 collections, listing every token now exposed.</p></li>
+            <li><span class="sev-tag" data-severity="critical">Critical</span><h3>Hidden outflows</h3><p>Functions named claim or mint that quietly transferFrom your assets to someone else.</p></li>
+            <li><span class="sev-tag" data-severity="high">High</span><h3>Off-chain permits</h3><p>ERC-2612 and Permit2 signatures that grant spending rights without a transaction.</p></li>
+            <li><span class="sev-tag" data-severity="medium">Medium</span><h3>Unknown calls and delegatecalls</h3><p>Unrecognised selectors and delegatecalls into other code are flagged, never assumed safe.</p></li>
+            <li><span class="sev-tag" data-severity="critical">Critical</span><h3>Known drainers and phishing sites</h3><p>Documented drainer addresses, runtime bytecode hashes and phishing domains, with sources.</p></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section" id="try">
+        <div class="wrap" data-reveal>
+          <div class="section-head">
+            <p class="eyebrow">Try it</p>
+            <h2 class="title">Three ways to see it work<span class="dot">.</span></h2>
+          </div>
+          <div class="cards" data-stagger>
+            <a class="card" href="./playground.html">
+              <span class="eyebrow">No install</span>
+              <h3>Playground</h3>
+              <p>Pick a real attack pattern against live mainnet state, paste your own request, or replay a mined transaction. The same report the extension shows appears in the page.</p>
+              <span class="go">Open the playground</span>
+            </a>
+            <a class="card" href="./demo.html">
+              <span class="eyebrow">Extension + wallet</span>
+              <h3>Live demo on Sepolia</h3>
+              <p>A deliberately malicious "rewards" site with our own deployed drainer contracts. Click an offer and watch Cognitia stop it before MetaMask opens.</p>
+              <span class="go">Open the demo</span>
+            </a>
+            <a class="card" href="./install.html">
+              <span class="eyebrow">Chrome, Edge, Brave</span>
+              <h3>Install the extension</h3>
+              <p>Download the build, load it in your browser in four steps, and every site you visit gets the same protection.</p>
+              <span class="go">Get the extension</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="wrap split" style="align-items: start" data-reveal>
+          <div class="section-head" style="margin: 0">
+            <p class="eyebrow">Honest limits</p>
+            <h2 class="title">What it does not promise<span class="dot">.</span></h2>
+          </div>
+          <ul class="list">
+            <li>Interception wraps injected wallet providers. Direct RPC transports, WalletConnect and other frames can bypass it.</li>
+            <li>A signature is simulated as what it would authorise. That does not prove the signature itself is valid.</li>
+            <li>The drainer database is curated, not a live feed. No match is not a safety guarantee.</li>
+            <li>Asset discovery is limited to what calldata, logs and traces reveal. It is not a full wallet inventory.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <site-footer></site-footer>
+  </body>
+</html>

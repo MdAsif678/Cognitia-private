@@ -36,6 +36,10 @@ jobs:
         env:
           API_BASE_URL: ${{ vars.ANALYSIS_API_URL || 'http://localhost:8080' }}
         run: npm run build
+      - name: Build public site with packaged extension
+        env:
+          SITE_API_BASE_URL: ${{ vars.ANALYSIS_API_URL }}
+        run: npm run build:site
       - name: Build deployable image
         run: docker build -f services/api/Dockerfile -t cognitia-api:ci .
       - name: Verify source API, packaged API and Docker runtime against local contracts

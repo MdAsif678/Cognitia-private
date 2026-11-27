@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Playground · Cognitia</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%23111'/><rect x='10' y='10' width='3' height='3' fill='%23c22f1c'/></svg>" />
+    <meta name="color-scheme" content="light" />
+    <script>document.documentElement.classList.add('js')</script>
+    <link rel="stylesheet" href="./src/styles/site.css" />
+    <link rel="stylesheet" href="./src/playground/playground.css" />
+    <script type="module" src="./src/playground/main.tsx"></script>
+  </head>
+  <body>
+    <site-header current="playground"></site-header>
+    <main class="wrap">
+      <section class="page-head" style="padding-bottom: 28px">
+        <p class="eyebrow">Playground · no install</p>
+        <h1 class="title" style="margin-top: 12px; font-size: clamp(30px, 4vw, 44px)">See what a request really does<span class="dot">.</span></h1>
+        <p class="lead">Run a real attack pattern against live mainnet state, paste any wallet request, or replay a mined transaction. You get the same report the extension shows before your wallet opens.</p>
+      </section>
+      <div id="playground">
+        <div class="pg pg-skeleton" aria-hidden="true">
+          <div class="pg-controls">
+            <div class="sk sk-field"></div>
+            <div class="sk sk-tabs"></div>
+            <div class="pg-list"><div class="sk sk-item"></div><div class="sk sk-item"></div><div class="sk sk-item"></div><div class="sk sk-item"></div></div>
+          </div>
+          <div class="pg-output"><div class="pg-frame"><div class="pg-frame-bar"><span>Cognitia side panel</span><span></span></div><div class="pg-empty"></div></div></div>
+        </div>
+      </div>
+    </main>
+    <site-footer></site-footer>
+  </body>
+</html>

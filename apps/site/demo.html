@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live demo · Cognitia</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%23111'/><rect x='10' y='10' width='3' height='3' fill='%23c22f1c'/></svg>" />
+    <meta name="color-scheme" content="light" />
+    <script>document.documentElement.classList.add('js')</script>
+    <link rel="stylesheet" href="./src/styles/site.css" />
+    <link rel="stylesheet" href="./src/demo/demo.css" />
+    <script type="module" src="./src/demo/main.ts"></script>
+  </head>
+  <body>
+    <site-header current="demo"></site-header>
+
+    <main class="wrap">
+      <section class="page-head" style="padding-bottom: 24px">
+        <p class="eyebrow">Live demo · <span data-chain-name>Sepolia</span></p>
+        <h1 class="title" style="margin-top: 12px; font-size: clamp(30px, 4vw, 44px)">A rewards site that wants your assets<span class="dot">.</span></h1>
+        <p class="lead">
+          Every offer below is a real request to contracts we deployed for this demo. Some are traps. With the
+          Cognitia extension installed, each one is stopped and explained before your wallet opens.
+        </p>
+        <p class="notice" style="margin-top: 22px">
+          <strong>Use a test wallet.</strong> This page is malicious on purpose. Only use an account that holds
+          nothing but free test tokens.
+        </p>
+      </section>
+
+      <section class="demo-setup" aria-label="Setup" data-reveal>
+        <ol class="demo-checks" data-stagger>
+          <li>
+            <span class="status-pill" id="chk-extension">Checking</span>
+            <div><h3>Cognitia extension</h3><p id="chk-extension-text">Looking for the extension on this page…</p></div>
+            <a class="button secondary small" href="./install.html" id="chk-extension-action">Install</a>
+          </li>
+          <li>
+            <span class="status-pill" id="chk-wallet">Not connected</span>
+            <div><h3>Wallet</h3><p id="chk-wallet-text">MetaMask or any EIP-6963 wallet.</p></div>
+            <div class="demo-wallet">
+              <select id="wallet-select" aria-label="Wallet" hidden></select>
+              <button class="button small" id="btn-connect">Connect</button>
+            </div>
+          </li>
+          <li>
+            <span class="status-pill" id="chk-network">Unknown</span>
+            <div><h3>Network</h3><p id="chk-network-text">The demo contracts live on <span data-chain-name>Sepolia</span>.</p></div>
+            <button class="button secondary small" id="btn-switch">Switch</button>
+          </li>
+          <li>
+            <span class="status-pill" id="chk-contracts">Checking</span>
+            <div><h3>Demo contracts</h3><p id="chk-contracts-text">Reading the deployment…</p></div>
+            <a class="button secondary small" id="faucet-link" href="#" target="_blank" rel="noopener" hidden>Get test ETH</a>
+          </li>
+        </ol>
+      </section>
+
+      <section class="section" style="padding-top: 48px" data-reveal>
+        <div class="section-head" style="margin-bottom: 24px">
+          <p class="eyebrow">Step 1 · Free test assets</p>
+          <p>Mint some demo tokens to your wallet so the traps have something to take. These are normal, harmless transactions and need a little <span data-chain-name>Sepolia</span> ETH for gas.</p>
+        </div>
+        <div class="demo-actions" data-stagger>
+          <button class="button secondary" data-action="mint-token">Mint 1,000 pUSD</button>
+          <button class="button secondary" data-action="mint-nft">Mint a pNFT</button>
+          <button class="button secondary" data-action="mint-badges">Mint 10 event badges</button>
+        </div>
+      </section>
+
+      <section class="section" style="padding-top: 48px" data-reveal>
+        <div class="section-head" style="margin-bottom: 24px">
+          <p class="eyebrow">Step 2 · Offers</p>
+          <p>These look like what real phishing sites show. Click one and read what Cognitia says before deciding.</p>
+        </div>
+        <div class="offers" data-stagger>
+          <article class="offer">
+            <h3>Claim 500 pUSD airdrop</h3>
+            <p>"Confirm your wallet to receive the airdrop."</p>
+            <p class="offer-truth"><span class="sev-tag" data-severity="high">Trap</span> Unlimited pUSD approval to the attacker.</p>
+            <button class="button" data-action="airdrop">Claim airdrop</button>
+          </article>
+          <article class="offer">
+            <h3>NFT holder rewards</h3>
+            <p>"Verify eligibility, then claim your reward points."</p>
+            <p class="offer-truth"><span class="sev-tag" data-severity="critical">Trap</span> Step A approves the rewards contract for every pNFT; step B sweeps them all to the attacker.</p>
+            <div class="offer-buttons">
+              <button class="button" data-action="eligibility">A · Verify eligibility</button>
+              <button class="button" data-action="claim-nft">B · Claim rewards</button>
+            </div>
+          </article>
+          <article class="offer">
+            <h3>Stake pUSD, earn 40% APY</h3>
+            <p>"Stake 500 pUSD, then claim your yield any time."</p>
+            <p class="offer-truth"><span class="sev-tag" data-severity="critical">Trap</span> Staking only approves the contract; claim() then moves your pUSD to the attacker.</p>
+            <div class="offer-buttons">
+              <button class="button" data-action="stake">A · Stake 500 pUSD</button>
+              <button class="button" data-action="claim-yield">B · Claim yield</button>
+            </div>
+          </article>
+          <article class="offer">
+            <h3>Gasless voucher</h3>
+            <p>"No gas needed, just sign to redeem."</p>
+            <p class="offer-truth"><span class="sev-tag" data-severity="high">Trap</span> An ERC-2612 permit for unlimited pUSD, usable by the attacker later.</p>
+            <button class="button" data-action="voucher">Sign voucher</button>
+          </article>
+          <article class="offer">
+            <h3>Event badges</h3>
+            <p>"Collect your conference badges."</p>
+            <p class="offer-truth"><span class="sev-tag" data-severity="high">Trap</span> ERC-1155 approve-all for the attacker.</p>
+            <button class="button" data-action="badges">Collect badges</button>
+          </article>
+          <article class="offer">
+            <h3>Send or clean up</h3>
+            <p>Safe controls to compare against.</p>
+            <p class="offer-truth"><span class="sev-tag" data-severity="low">Safe</span> A 10 pUSD transfer, and revoking what the traps granted.</p>
+            <div class="offer-buttons">
+              <button class="button secondary" data-action="transfer">Send 10 pUSD</button>
+              <button class="button secondary" data-action="revoke">Revoke approvals</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" style="padding-top: 48px" data-reveal>
+        <div class="demo-log-head">
+          <p class="eyebrow">Activity</p>
+          <button class="button secondary small" id="btn-clear">Clear</button>
+        </div>
+        <p id="demo-status" class="demo-status">Waiting for setup.</p>
+        <pre id="demo-log" class="demo-log"></pre>
+      </section>
+    </main>
+
+    <site-footer></site-footer>
+  </body>
+</html>

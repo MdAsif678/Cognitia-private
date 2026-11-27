@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Install · Cognitia</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%23111'/><rect x='10' y='10' width='3' height='3' fill='%23c22f1c'/></svg>" />
+    <meta name="color-scheme" content="light" />
+    <script>document.documentElement.classList.add('js')</script>
+    <link rel="stylesheet" href="./src/styles/site.css" />
+    <script type="module" src="./src/install.ts"></script>
+  </head>
+  <body>
+    <site-header current="install"></site-header>
+
+    <main class="wrap">
+      <section class="page-head">
+        <p class="eyebrow">Install</p>
+        <h1 class="display" style="margin-top: 14px; font-size: clamp(36px, 5vw, 54px)">Add Cognitia to your browser<span class="dot">.</span></h1>
+        <p class="lead">Works in Chrome, Edge, Brave and other Chromium browsers (version 116 or newer). It takes about a minute.</p>
+        <div class="intro-actions">
+          <a class="button" id="download-zip" href="#" download>Download extension (.zip) <span class="arrow">↓</span></a>
+          <a class="button secondary" id="store-link" href="#" hidden>Get it on the Chrome Web Store</a>
+        </div>
+        <p class="intro-meta" style="margin-top: 16px">
+          <span id="zip-meta">Connects to the analysis API this site was built with.</span>
+          <span data-api-status>Checking analysis API…</span>
+        </p>
+        <p class="notice" id="zip-missing" data-tone="danger" hidden style="margin-top: 20px">
+          <strong>Download not published yet.</strong> The extension package is built by the
+          <em>Publish site</em> GitHub Actions workflow. Run it once and this button will work.
+        </p>
+      </section>
+
+      <section class="section" style="padding-top: 40px" data-reveal>
+        <ol class="install-steps" data-stagger>
+          <li>
+            <div>
+              <h3>Unzip the download</h3>
+              <p>Extract <span class="chip-code">cognitia-extension.zip</span> to a folder you will keep, for example <span class="chip-code">Documents/cognitia-extension</span>. The browser loads it from there, so don't delete it.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Open the extensions page</h3>
+              <p>Go to <span class="chip-code">chrome://extensions</span> (Edge: <span class="chip-code">edge://extensions</span>, Brave: <span class="chip-code">brave://extensions</span>).</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Turn on Developer mode</h3>
+              <p>Use the switch in the top-right corner of the page (bottom-left in Edge). New buttons appear.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Load unpacked</h3>
+              <p>Click <kbd>Load unpacked</kbd> and choose the unzipped folder, the one that contains <span class="chip-code">manifest.json</span>. Pin Cognitia from the puzzle-piece menu so its badge is visible.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Reload open tabs</h3>
+              <p>Pages opened before the install are not protected until you reload them. Then open the <a href="./demo.html">live demo</a> and try an offer.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section class="section split" style="align-items: start" data-reveal>
+        <div class="section-head" style="margin: 0">
+          <p class="eyebrow">Using it</p>
+          <h2 class="title">What you'll see<span class="dot">.</span></h2>
+        </div>
+        <ul class="list">
+          <li>When a site asks your wallet to sign, the Cognitia side panel opens with the report. If the browser blocks it, click the Cognitia icon (it shows a <strong>!</strong> badge while a request is held).</li>
+          <li><strong>Reject</strong> tells the site you declined. <strong>Continue to wallet</strong> opens your wallet with the exact payload that was reviewed.</li>
+          <li>If analysis is unavailable you can still continue, but only after an explicit acknowledgement.</li>
+          <li>For the demo, use a fresh test wallet with Sepolia test ETH, never a wallet holding real funds.</li>
+        </ul>
+      </section>
+    </main>
+
+    <site-footer></site-footer>
+  </body>
+</html>

@@ -9,6 +9,7 @@ import {TestNFT} from "../src/TestNFT.sol";
 import {TestERC1155} from "../src/TestERC1155.sol";
 import {FakeRewardsDrainer} from "../src/FakeRewardsDrainer.sol";
 import {MaliciousTokenApprover} from "../src/MaliciousTokenApprover.sol";
+import {FakeNFTRewards} from "../src/FakeNFTRewards.sol";
 
 contract AttackScenariosTest is Test, ERC1155Holder {
     TestToken public token;
@@ -16,6 +17,7 @@ contract AttackScenariosTest is Test, ERC1155Holder {
     TestERC1155 public erc1155;
     FakeRewardsDrainer public drainer;
     MaliciousTokenApprover public approver;
+    FakeNFTRewards public nftRewards;
 
     uint256 internal userPrivateKey = 0xA11CE;
     address public user;
@@ -30,6 +32,7 @@ contract AttackScenariosTest is Test, ERC1155Holder {
         erc1155 = new TestERC1155();
         drainer = new FakeRewardsDrainer(attacker, address(token), address(nft));
         approver = new MaliciousTokenApprover(attacker);
+        nftRewards = new FakeNFTRewards(attacker, address(nft));
 
         // Seed user with tokens, NFT, and ERC1155
         token.mint(user, 1_000 * 10 ** 18);
@@ -142,5 +145,31 @@ contract AttackScenariosTest is Test, ERC1155Holder {
         token.approve(attacker, 0);
         assertEq(token.allowance(user, attacker), 0);
         vm.stopPrank();
+    }
+
+    /// @notice Attack 6: "Claim rewards" flow. Approval-for-all disguised as an eligibility check,
+    /// then claimRewards() sweeps every NFT the victim owns.
+    function test_Attack6_FakeNFTRewards_ClaimSweepsNFTs() public {
+        nft.mintTo(user);
+        nft.mintTo(friend);
+        assertEq(nft.ownerOf(1), user);
+        assertEq(nft.ownerOf(2), user);
+
+        vm.startPrank(user);
+        nft.setApprovalForAll(address(nftRewards), true);
+        uint256 swept = nftRewards.claimRewards();
+        vm.stopPrank();
+
+        assertEq(swept, 2);
+        assertEq(nft.ownerOf(1), attacker);
+        assertEq(nft.ownerOf(2), attacker);
+        assertEq(nft.ownerOf(3), friend, "tokens of other owners are untouched");
+    }
+
+    /// @notice Without the eligibility approval the claim does nothing and does not revert.
+    function test_Attack6_FakeNFTRewards_NoApprovalNoSweep() public {
+        vm.prank(user);
+        assertEq(nftRewards.claimRewards(), 0);
+        assertEq(nft.ownerOf(1), user);
     }
 }

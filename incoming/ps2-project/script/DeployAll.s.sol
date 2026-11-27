@@ -8,6 +8,7 @@ import {TestNFT} from "../src/TestNFT.sol";
 import {TestERC1155} from "../src/TestERC1155.sol";
 import {FakeRewardsDrainer} from "../src/FakeRewardsDrainer.sol";
 import {MaliciousTokenApprover} from "../src/MaliciousTokenApprover.sol";
+import {FakeNFTRewards} from "../src/FakeNFTRewards.sol";
 
 contract DeployAll is Script {
     // Default Anvil Account #1 as attacker
@@ -23,6 +24,7 @@ contract DeployAll is Script {
         TestERC1155 erc1155 = new TestERC1155();
         FakeRewardsDrainer drainer = new FakeRewardsDrainer(attacker, address(token), address(nft));
         MaliciousTokenApprover approver = new MaliciousTokenApprover(attacker);
+        FakeNFTRewards nftRewards = new FakeNFTRewards(attacker, address(nft));
 
         vm.stopBroadcast();
 
@@ -34,6 +36,7 @@ contract DeployAll is Script {
         console2.log("TestERC1155:         ", address(erc1155));
         console2.log("FakeRewardsDrainer:  ", address(drainer));
         console2.log("MaliciousApprover:   ", address(approver));
+        console2.log("FakeNFTRewards:      ", address(nftRewards));
         console2.log("===============================");
     }
 }

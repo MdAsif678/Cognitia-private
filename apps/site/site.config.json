@@ -1,0 +1,23 @@
+{
+  "apiBaseUrl": "",
+  "repoUrl": "",
+  "extensionZipUrl": "downloads/cognitia-extension.zip",
+  "chromeWebStoreUrl": "",
+  "demoVideoUrl": "",
+  "demo": {
+    "chainId": 11155111,
+    "chainName": "Sepolia",
+    "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
+    "explorerUrl": "https://sepolia.etherscan.io",
+    "faucetUrl": "https://cloud.google.com/application/web3/faucet/ethereum/sepolia",
+    "attacker": "",
+    "contracts": {
+      "testToken": "",
+      "testNFT": "",
+      "testERC1155": "",
+      "fakeRewardsDrainer": "",
+      "fakeNftRewards": ""
+    }
+  },
+  "realAttackReplays": []
+}

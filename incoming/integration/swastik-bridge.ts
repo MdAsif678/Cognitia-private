@@ -97,6 +97,28 @@ function describeChange(c: SimulationResult["immediateChanges"][number]): string
   }
 }
 
+/**
+ * Delegatecall targets that are NOT a proxy forwarding to its own implementation. Proxied tokens
+ * (USDC, USDT and most upgradeable contracts) delegatecall on every call; reporting those as
+ * "unverified delegatecall" turned every ordinary USDC transfer into a high-risk verdict. Same
+ * exclusions as the baseline `trace.delegatecall` rule: the caller's declared proxy implementation
+ * (EIP-1167 / EIP-1967 / beacon, read on the fork) or a verbatim calldata forward from the parent call.
+ */
+export function suspiciousDelegatecallTargets(sim: SimulationResult): string[] {
+  const lc = (a?: string | null) => (a ?? "").toLowerCase();
+  const calls = sim.calls.filter((c) => c.step === "request");
+  const out = new Set<string>();
+  calls.forEach((c, i) => {
+    if (c.type !== "DELEGATECALL" || !c.to) return;
+    const caller = sim.accounts.find((a) => lc(a.address) === lc(c.from));
+    if (caller?.proxyImplementation && lc(caller.proxyImplementation) === lc(c.to)) return;
+    const parent = calls.slice(0, i).reverse().find((p) => p.depth === c.depth - 1);
+    if (parent && lc(parent.to) === lc(c.from) && parent.input && parent.input === c.input) return;
+    out.add(c.to);
+  });
+  return [...out];
+}
+
 /** Map Asif's SimulationResult onto Swastik's simulation schema. */
 export function toSwastikSimulation(sim: SimulationResult, input: AssessInput): SwastikSimulation {
   const conditional = sim.mode === "conditional-signature";
@@ -148,7 +170,7 @@ export function toSwastikSimulation(sim: SimulationResult, input: AssessInput): 
     pinnedSnapshot: { chainId: sim.fork.chainId, blockNumber: sim.fork.blockNumber, blockHash: sim.fork.blockHash },
     disclosedOverrides: [{ type: "impersonation", target: from, details: `Impersonated ${from} on a private Anvil fork pinned to block #${sim.fork.blockNumber}; nothing was broadcast.` }],
     callTraces: sim.calls.filter((c) => c.to).map((c) => ({ from: c.from, to: c.to!, value: c.value, callType: callType(c.type), depth: c.depth, error: c.error })),
-    delegatecallTargets: [...new Set(sim.calls.filter((c) => c.type === "DELEGATECALL" && c.to).map((c) => c.to!))],
+    delegatecallTargets: suspiciousDelegatecallTargets(sim),
     stateChanges: sc,
     discoveryLimits: [...sim.coverage.missing, "Only assets referenced by calldata, logs or the execution trace were inspected."],
     separatedEffects: {

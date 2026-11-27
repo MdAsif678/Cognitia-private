@@ -1,33 +1,72 @@
 name: Deploy demo contracts to Sepolia
+# Manual, testnet-only. Deploys the demo token, NFTs and both drainer contracts, records their
+# addresses in incoming/ps2-project/deployments/sepolia.json, commits that file and republishes the
+# site so the live demo and the playground pick the contracts up.
+#
+# Needs, in the "sepolia" environment:
+#   secrets.SEPOLIA_RPC_URL        any Sepolia RPC URL (a keyless public one works)
+#   secrets.SEPOLIA_DEPLOYER_KEY   a TESTNET-ONLY private key holding a little Sepolia ETH
+# Optional:
+#   secrets.ETHERSCAN_API_KEY      verifies the sources on Etherscan when present
+#   vars.SEPOLIA_ATTACKER_ADDRESS  where the demo drainers send stolen test tokens (defaults to Anvil account #1)
 on:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
+  actions: write
+concurrency:
+  group: deploy-sepolia
+  cancel-in-progress: false
 jobs:
   deploy:
     environment: sepolia
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: incoming/ps2-project
     steps:
       - uses: actions/checkout@v4
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: v1.8.1
-      - run: |
+      - name: Install pinned contract dependencies and test
+        working-directory: incoming/ps2-project
+        run: |
           forge install foundry-rs/forge-std@v1.16.2 --no-git
           forge install OpenZeppelin/openzeppelin-contracts@v5.7.0 --no-git
           forge test
       - name: Deploy on verified testnet
+        working-directory: incoming/ps2-project
         env:
           RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
           PRIVATE_KEY: ${{ secrets.SEPOLIA_DEPLOYER_KEY }}
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          ATTACKER_ADDRESS: ${{ vars.SEPOLIA_ATTACKER_ADDRESS }}
         run: |
-          test -n "$RPC_URL" && test -n "$PRIVATE_KEY"
+          if [ -z "$RPC_URL" ] || [ -z "$PRIVATE_KEY" ]; then
+            echo "::error::Set SEPOLIA_RPC_URL and SEPOLIA_DEPLOYER_KEY in the 'sepolia' environment first."
+            exit 1
+          fi
           test "$(cast chain-id --rpc-url "$RPC_URL")" = 11155111
-          forge script script/DeployAll.s.sol:DeployAll --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --broadcast
+          [ -n "$ATTACKER_ADDRESS" ] || unset ATTACKER_ADDRESS
+          VERIFY=()
+          [ -n "$ETHERSCAN_API_KEY" ] && VERIFY=(--verify --etherscan-api-key "$ETHERSCAN_API_KEY")
+          forge script script/DeployAll.s.sol:DeployAll --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" --broadcast "${VERIFY[@]}"
+      - name: Record addresses for the site
+        env:
+          ATTACKER_ADDRESS: ${{ vars.SEPOLIA_ATTACKER_ADDRESS }}
+        run: node scripts/write-demo-deployment.mjs 11155111
       - uses: actions/upload-artifact@v4
         with:
           name: sepolia-deployments
-          path: incoming/ps2-project/broadcast/DeployAll.s.sol/11155111/
+          path: |
+            incoming/ps2-project/broadcast/DeployAll.s.sol/11155111/
+            incoming/ps2-project/deployments/sepolia.json
+      - name: Commit the deployment record
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add incoming/ps2-project/deployments/sepolia.json incoming/ps2-project/broadcast/DeployAll.s.sol/11155111/run-latest.json
+          git commit -m "chore(demo): record Sepolia demo contract deployment" || echo "Nothing to commit"
+          git push
+      - name: Republish the site with the new addresses
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run site.yml --ref "${GITHUB_REF_NAME}"

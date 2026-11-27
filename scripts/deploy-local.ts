@@ -24,12 +24,17 @@ const testToken = await deploy('TestToken');
 const testNFT = await deploy('TestNFT');
 const testERC1155 = await deploy('TestERC1155');
 const fakeRewardsDrainer = await deploy('FakeRewardsDrainer', [attacker, testToken, testNFT]);
+const fakeNftRewards = await deploy('FakeNFTRewards', [attacker, testNFT]);
 for (let i = 0; i < 3; i++) {
   const hash = await wallet.writeContract({ address: testNFT, abi: parseAbi(['function mint() returns (uint256)']), functionName: 'mint' });
   await publicClient.waitForTransactionReceipt({ hash });
 }
 const approval = await wallet.writeContract({ address: testToken, abi: parseAbi(['function approve(address,uint256) returns (bool)']), functionName: 'approve', args: [fakeRewardsDrainer, 500n * 10n ** 18n] });
 await publicClient.waitForTransactionReceipt({ hash: approval });
-const config = { chainId: 31337, rpcUrl, apiBaseUrl: process.env.DEMO_API_URL ?? 'http://localhost:8080', testWallet: account.address, attacker, contracts: { testToken, testNFT, testERC1155, fakeRewardsDrainer } };
+// Seed the "eligibility check" approval the claim-rewards phishing flow asks for first, so
+// claimRewards() visibly sweeps the three NFTs when it is simulated.
+const eligibility = await wallet.writeContract({ address: testNFT, abi: parseAbi(['function setApprovalForAll(address,bool)']), functionName: 'setApprovalForAll', args: [fakeNftRewards, true] });
+await publicClient.waitForTransactionReceipt({ hash: eligibility });
+const config = { chainId: 31337, rpcUrl, apiBaseUrl: process.env.DEMO_API_URL ?? 'http://localhost:8080', testWallet: account.address, attacker, contracts: { testToken, testNFT, testERC1155, fakeRewardsDrainer, fakeNftRewards } };
 await writeFile('incoming/ps2-project/demo/deployment.json', JSON.stringify(config, null, 2) + '\n');
 console.log('Deployed and seeded local demo:', config);
