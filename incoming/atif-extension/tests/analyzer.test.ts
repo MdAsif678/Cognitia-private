@@ -72,7 +72,7 @@ function makeReport(requestId: string, overrides: Record<string, unknown> = {}):
     immediateChanges: [
       {
         type: 'native_transfer',
-        asset: 'AUR',
+        asset: 'ETH',
         from: ACCOUNT,
         to: '0x1111111111111111111111111111111111111111',
         amount: '0x10',

@@ -25,7 +25,7 @@ export function amount(raw: string | bigint, token: string, tokens: TokenInfo[])
   return `${v.toString()} ${label}`;
 }
 
-export function eth(raw: string | bigint, symbol = "AUR"): string {
+export function eth(raw: string | bigint, symbol = "ETH"): string {
   return `${group(formatUnits(typeof raw === "bigint" ? raw : BigInt(raw), 18))} ${symbol}`;
 }
 

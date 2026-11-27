@@ -36,7 +36,7 @@ export const benignTransferReport: AnalysisReport = {
   requestHash: '0x1111111111111111111111111111111111111111111111111111111111111111',
   status: 'complete',
   severity: 'low',
-  summary: 'Safe direct transfer of 0.05 AUR to a verified recipient. No drainer or malicious pattern detected.',
+  summary: 'Safe direct transfer of 0.05 ETH to a verified recipient. No drainer or malicious pattern detected.',
   fork: {
     chainId: 1,
     blockNumber: '0x12d4a8f',
@@ -61,10 +61,10 @@ export const benignTransferReport: AnalysisReport = {
   immediateChanges: [
     {
       type: 'native_transfer',
-      asset: 'AUR',
+      asset: 'ETH',
       from: TEST_ACCOUNT,
       to: TEST_SPENDER,
-      amount: '0.05 AUR',
+      amount: '0.05 ETH',
     },
   ],
   potentialExposure: [],
@@ -82,7 +82,7 @@ export const benignTransferReport: AnalysisReport = {
     gasUsed: '21000',
     effectiveGasPrice: '15 Gwei',
     baseFee: '12 Gwei',
-    stateTrace: 'SSTORE 0x7099... balance +0.05 AUR',
+    stateTrace: 'SSTORE 0x7099... balance +0.05 ETH',
   },
 };
 
@@ -95,7 +95,7 @@ export const benignTransferSnapshot: PendingRequestSnapshot = {
     {
       from: TEST_ACCOUNT,
       to: TEST_SPENDER,
-      value: '0xb1a2bc2ec50000', // 0.05 AUR
+      value: '0xb1a2bc2ec50000', // 0.05 ETH
     },
   ],
   chainId: '0x1',
@@ -470,7 +470,7 @@ export const failedAnalysisReport: AnalysisReport = {
       severity: 'unknown',
       title: 'Unverified Contract Source Code',
       description: 'Destination contract source is not verified on block explorer.',
-      explanation: 'The contract source code is not published or verified on AurumScan. Note: unverified status alone does not imply malicious behavior, but bytecode inspection and simulation depth are limited.',
+      explanation: 'The contract source code is not published or verified on Etherscan. Note: unverified status alone does not imply malicious behavior, but bytecode inspection and simulation depth are limited.',
       evidence: `Target: ${UNVERIFIED_CONTRACT} (No verified ABI found)`,
       confidence: 'Medium (65%)',
     },
@@ -516,7 +516,7 @@ export const failedAnalysisSnapshot: PendingRequestSnapshot = {
 export const ALL_FIXTURES: Record<string, FixtureScenario> = {
   benign: {
     id: 'benign',
-    name: 'Benign Transfer (AUR)',
+    name: 'Benign Transfer (ETH)',
     snapshot: benignTransferSnapshot,
     report: benignTransferReport,
     analysis: benignTransferSnapshot.analysis!,
