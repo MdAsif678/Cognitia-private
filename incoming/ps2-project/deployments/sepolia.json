@@ -1,0 +1,15 @@
+{
+  "chainId": 11155111,
+  "attacker": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  "contracts": {
+    "testToken": "0x7a2a73fc0c3a74767efa3894aeaee283f8517948",
+    "testNFT": "0xa91e001c011efe763d8ff634f5b4bad3bba58f33",
+    "testERC1155": "0x412d5accf7ab5dd165736ab82c9258d6f30e960f",
+    "fakeRewardsDrainer": "0x97c08bcbbe62c8d1524c9690fd46db49f1dccdaa",
+    "maliciousTokenApprover": "0xbc978394f7d364bc62b72f734e6df9adce834d9a",
+    "fakeNftRewards": "0x1e7527b5b84a0e4389e726e5539c26198dfd1ffd"
+  },
+  "deployedAt": "2026-11-27T12:24:14.296Z",
+  "blockNumber": "12223307",
+  "commit": "ce5ba1eb7ff21d4868a6415b6f5919c1c4f4dc15"
+}
